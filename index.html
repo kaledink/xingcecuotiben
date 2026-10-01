@@ -1,0 +1,2122 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="行测错题本：导入卷子和答案 PDF 自动拆题，一题一页计时做题，画板演算，错题本、笔记、知识点统计与导出。数据只保存在你自己的设备上。">
+<meta name="theme-color" content="#30509b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="错题本">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>行测错题本</title>
+<style>
+/* Layout: answer-sheet paper ground, white question sheets, ink-blue pen accent; red/green reserved for 对/错 */
+:root{
+  --paper:#eef0ec; --card:#ffffff; --sunk:#f6f7f4; --ink:#1b2326; --ink2:#566265; --ink3:#8a9497; --line:#dce1dc;
+  --accent:#30509b; --accent-soft:#e3e9f6; --on-accent:#ffffff;
+  --good:#1f8456; --good-soft:#dcf0e5; --bad:#c43d2b; --bad-soft:#f8e1dc; --mark:#b97c0a; --mark-soft:#f6ebd2;
+  --shadow:0 1px 2px rgba(20,30,35,.06),0 4px 14px rgba(20,30,35,.05);
+  --f-display:"Noto Serif SC","Songti SC","STSong",serif;
+  --f-body:-apple-system,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#121618; --card:#1b2124; --sunk:#171c1e; --ink:#e5ebe8; --ink2:#a2adab; --ink3:#727d7c; --line:#2b3437;
+  --accent:#93acf5; --accent-soft:#25304a; --on-accent:#0f1626;
+  --good:#52c08b; --good-soft:#163527; --bad:#f07a63; --bad-soft:#3e1f1a; --mark:#e3b24c; --mark-soft:#3a2f17;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#121618; --card:#1b2124; --sunk:#171c1e; --ink:#e5ebe8; --ink2:#a2adab; --ink3:#727d7c; --line:#2b3437;
+  --accent:#93acf5; --accent-soft:#25304a; --on-accent:#0f1626;
+  --good:#52c08b; --good-soft:#163527; --bad:#f07a63; --bad-soft:#3e1f1a; --mark:#e3b24c; --mark-soft:#3a2f17;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;-webkit-text-size-adjust:100%}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+h1,h2,h3{text-wrap:balance;margin:0}
+/* ---------- shell ---------- */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1080px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{font-family:var(--f-display);font-weight:700;font-size:19px;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
+.brand i{display:inline-block;width:18px;height:22px;border:2px solid var(--accent);border-radius:3px;position:relative}
+.brand i::after{content:"";position:absolute;left:3px;right:3px;top:5px;height:3px;background:var(--accent);box-shadow:0 6px 0 var(--accent)}
+.tabs{display:flex;gap:4px;overflow-x:auto;flex:1;min-width:0}
+.tab{border:0;background:none;padding:6px 12px;border-radius:999px;color:var(--ink2);white-space:nowrap}
+.tab[aria-current="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.store-chip{font-size:12px;color:var(--ink3);white-space:nowrap}
+@media (max-width:640px){.tabs{order:3;flex-basis:100%}.topbar-in{gap:6px 12px}.brand{flex:1}}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 120px}
+.section-title{font-size:13px;letter-spacing:.08em;color:var(--ink3);margin:28px 0 10px;font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.pad{padding:18px}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.grow{flex:1;min-width:0}
+.muted{color:var(--ink2)} .faint{color:var(--ink3)} .small{font-size:13px}
+.btn{border:1px solid var(--line);background:var(--card);padding:8px 14px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;min-height:38px}
+.btn:hover{border-color:var(--ink3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.danger{color:var(--bad)}
+.btn.sm{min-height:30px;padding:4px 10px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--sunk);border:1px solid var(--line);color:var(--ink2);white-space:nowrap}
+.chip.good{background:var(--good-soft);color:var(--good);border-color:transparent}
+.chip.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.chip.mark{background:var(--mark-soft);color:var(--mark);border-color:transparent}
+.chip.acc{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+input[type=text],input[type=number],select,textarea{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-height:38px;max-width:100%}
+textarea{width:100%;resize:vertical;line-height:1.6}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:10px;z-index:100;font-size:14px;max-width:calc(100% - 32px)}
+.empty{text-align:center;padding:40px 16px;color:var(--ink2)}
+.bar-bottom{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--card);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+.bar-bottom .in{max-width:1080px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+/* ---------- library ---------- */
+.papers{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.paper{display:flex;flex-direction:column;gap:10px}
+.paper h3{font-family:var(--f-display);font-size:17px;line-height:1.4}
+.import-card{border:1.5px dashed var(--ink3);background:transparent;box-shadow:none;display:flex;flex-direction:column;justify-content:center;gap:8px;min-height:150px;text-align:left}
+.kpi{display:flex;gap:28px;flex-wrap:wrap}
+.kpi div b{display:block;font-family:var(--f-num);font-size:26px;font-weight:600;line-height:1.2}
+.kpi div span{font-size:12px;color:var(--ink3)}
+/* ---------- import ---------- */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.drop{display:flex;flex-direction:column;gap:8px}
+.drop input[type=file]{font-size:13px;max-width:100%}
+.review{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:860px){.review{grid-template-columns:minmax(0,1fr)}}
+.side{position:sticky;top:76px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 96px);overflow:auto}
+@media (max-width:860px){.side{position:static;max-height:none}}
+.tools{display:flex;gap:6px;flex-wrap:wrap}
+.tool{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 10px;font-size:13px}
+.tool[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.pages{display:flex;flex-direction:column;gap:14px}
+.pg{position:relative;background:#fff;border:1px solid var(--line);border-radius:6px;overflow:hidden;cursor:crosshair}
+.pg canvas{display:block;width:100%;height:auto}
+.pg .band{position:absolute;left:0;right:0;background:repeating-linear-gradient(135deg,rgba(120,130,140,.18) 0 6px,transparent 6px 12px);pointer-events:none}
+.mk{position:absolute;left:0;right:0;height:0;border-top:2px solid var(--c);pointer-events:none}
+.mk b{position:absolute;left:0;top:-1px;transform:translateY(-100%);background:var(--c);color:#fff;font-size:12px;font-weight:600;padding:1px 6px;border-radius:4px 4px 4px 0;pointer-events:auto;cursor:pointer;white-space:nowrap;font-family:var(--f-body)}
+.mk.q{--c:#30509b} .mk.mat{--c:#b06a00} .mk.cut{--c:#7a7f86}
+.mk b:hover::after{content:" ×"}
+.pg .pno{position:absolute;right:6px;top:4px;font-size:11px;color:#777;background:rgba(255,255,255,.8);padding:0 4px;border-radius:3px}
+.warn{background:var(--mark-soft);color:var(--ink);border-radius:8px;padding:8px 10px;font-size:13px}
+.modrow{display:grid;grid-template-columns:minmax(0,1fr) 70px 30px;gap:6px;align-items:center}
+.modrow input,.modrow select{min-height:32px;padding:4px 8px;font-size:13px;width:100%}
+.progress{height:6px;background:var(--sunk);border-radius:99px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+/* ---------- practice ---------- */
+.prac{position:fixed;inset:0;z-index:40;background:var(--paper);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.prac-top{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--card)}
+.prac-top .title{flex:1;min-width:0;text-align:center;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ico{border:0;background:transparent;width:40px;height:40px;border-radius:8px;display:inline-grid;place-items:center;color:var(--ink2)}
+.ico:hover{background:var(--sunk)}
+.ico[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.ico.marked{color:var(--mark)}
+.ico svg{width:22px;height:22px}
+.timer{font-family:var(--f-num);font-size:14px;color:var(--ink2);display:flex;align-items:center;gap:4px;min-width:76px}
+.prac-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr)}
+.prac-body.has-mat{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+@media (max-width:900px){.prac-body.has-mat{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}}
+.matpane{overflow:auto;border-right:1px solid var(--line);background:var(--sunk);padding:14px}
+@media (max-width:900px){.matpane{border-right:0;border-bottom:1px solid var(--line);max-height:38vh}}
+.matpane .lbl{font-size:12px;color:var(--ink3);margin-bottom:6px;display:flex;justify-content:space-between}
+.qpane{overflow:auto;position:relative;-webkit-overflow-scrolling:touch}
+.qsheet{max-width:860px;margin:0 auto;padding:16px;position:relative}
+.qimg{display:block;width:100%;height:auto;background:#fff;border-radius:6px;border:1px solid var(--line)}
+.matpane .qimg{border-radius:4px}
+.qmeta{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.opts{display:flex;gap:14px;margin:18px 0 8px;flex-wrap:wrap}
+.opt{width:58px;height:58px;border-radius:50%;border:1.5px solid var(--line);background:var(--card);font-size:20px;font-weight:600;color:var(--ink2)}
+.opt[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.opt.ok{background:var(--good);border-color:var(--good);color:#fff}
+.opt.no{background:var(--bad);border-color:var(--bad);color:#fff}
+.scratch{height:55vh}
+.ink{position:absolute;left:0;top:0;pointer-events:none;z-index:5}
+.ink.on{pointer-events:auto;touch-action:none;cursor:crosshair}
+.inkbar{position:absolute;right:16px;top:12px;z-index:8;display:flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:4px;box-shadow:var(--shadow)}
+.inkbar .ico{width:36px;height:36px}
+.prac-foot{display:flex;justify-content:space-between;gap:10px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--card)}
+.sheet-bg{position:fixed;inset:0;background:rgba(10,15,20,.4);z-index:60;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--card);width:100%;max-width:760px;max-height:82vh;overflow:auto;border-radius:16px 16px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px))}
+@media (min-width:760px){.sheet-bg{align-items:center}.sheet{border-radius:16px}}
+.grid-q{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:10px;margin:8px 0 16px}
+.qdot{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--card);display:grid;place-items:center;font-family:var(--f-num);font-size:14px;position:relative;color:var(--ink2)}
+.qdot.done{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.qdot.good{background:var(--good);border-color:var(--good);color:#fff}
+.qdot.bad{background:var(--bad);border-color:var(--bad);color:#fff}
+.qdot.unk{background:var(--sunk);color:var(--ink3)}
+.qdot.cur{box-shadow:0 0 0 3px var(--ink)}
+.qdot.flag::after{content:"";position:absolute;right:-2px;top:-2px;width:12px;height:12px;border-radius:50%;background:var(--mark);border:2px solid var(--card)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--ink2);flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px;background:var(--c)}
+/* ---------- report ---------- */
+.hero{display:grid;grid-template-columns:auto minmax(0,1fr);gap:24px;align-items:center}
+@media (max-width:600px){.hero{grid-template-columns:minmax(0,1fr)}}
+.ring{width:150px;height:150px;position:relative}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring>div{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.ring b{font-family:var(--f-num);font-size:34px;line-height:1}
+.ring span{font-size:12px;color:var(--ink3)}
+.mods{display:flex;flex-direction:column}
+.mod{display:grid;grid-template-columns:minmax(90px,150px) minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.mod:first-child{border-top:0}
+.mod .nm{font-weight:600;font-size:14px}
+.mod .nm small{display:block;font-weight:400;color:var(--ink3);font-size:12px}
+.meter{display:flex;align-items:center;gap:8px;font-size:13px}
+.meter .track{flex:1;height:10px;background:var(--sunk);border-radius:99px;position:relative;overflow:hidden}
+.meter .fill{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0;background:var(--c,var(--accent))}
+.meter .track .sug{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.55}
+.meter .track{overflow:visible}
+.meter .track .fill{border-radius:99px}
+.meter .v{min-width:58px;line-height:1.3;text-align:right;font-family:var(--f-num);font-size:13px}
+.mod-head{display:grid;grid-template-columns:minmax(90px,150px) minmax(0,1fr) minmax(0,1fr);gap:16px;font-size:12px;color:var(--ink3)}
+@media (max-width:600px){.mod,.mod-head{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.mod .nm{grid-column:1/-1}.mod-head span:first-child{display:none}}
+/* ---------- review ---------- */
+.rv{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.rv{grid-template-columns:minmax(0,1fr)}}
+.ana{white-space:pre-wrap;user-select:text;-webkit-user-select:text;line-height:1.8;font-size:15px;max-height:60vh;overflow:auto;padding-right:4px}
+.ansline{display:flex;gap:18px;flex-wrap:wrap;font-size:14px;margin:12px 0}
+.ansline b{font-family:var(--f-num);font-size:18px}
+.tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:13px;padding:3px 4px 3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.tag button{border:0;background:transparent;color:inherit;padding:0 6px;font-size:14px}
+details summary{cursor:pointer;color:var(--ink2);font-size:13px}
+/* ---------- book ---------- */
+.grp{border-top:1px solid var(--line)}
+.grp:first-child{border-top:0}
+.grp-h{display:flex;align-items:center;gap:10px;padding:14px 4px}
+.grp-h .nm{font-weight:600;flex:1}
+.caret{border:0;background:var(--accent);color:var(--on-accent);width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;transition:transform .15s}
+.caret[aria-expanded="false"]{transform:rotate(-90deg)}
+.qrow{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 4px 10px 36px;border-top:1px dashed var(--line);font-size:14px}
+.qrow .txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.qrow .txt:hover{color:var(--accent)}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px}
+table.t{border-collapse:collapse;width:100%;font-size:13px}
+table.t th,table.t td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+table.t th{color:var(--ink3);font-weight:500}
+.tblwrap{overflow-x:auto}
+.kpname{width:10em;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kpd>summary{list-style:none;cursor:pointer;padding:5px 0}
+.kpd>summary::-webkit-details-marker{display:none}
+.kpd>summary .kpname::before{content:"▸ ";color:var(--ink3)}
+.kpd[open]>summary .kpname::before{content:"▾ "}
+.kpkids{padding-left:16px;border-left:1px solid var(--line);margin-left:6px}
+.kpleaf{padding:5px 0}
+.kpleaf .kpname{padding-left:1em}
+.kptree{max-height:52vh;overflow:auto;margin-top:10px;border-top:1px solid var(--line)}
+.kpn{display:flex;align-items:center;gap:6px;padding:3px 0}
+.kpn button.add{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:3px 12px;font-size:14px;text-align:left}
+.kpn button.add.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.kpn .tw{border:0;background:none;width:24px;color:var(--ink3);font-size:12px}
+.seg{display:inline-flex;background:var(--sunk);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;padding:6px 18px;border-radius:999px;color:var(--ink2)}
+.seg button[aria-selected="true"]{background:var(--card);color:var(--ink);font-weight:600;box-shadow:var(--shadow)}
+.hist{display:flex;flex-direction:column;gap:12px}
+.hrow{display:flex;align-items:center;gap:14px}
+.hmain{flex:1;min-width:0;border:0;background:none;text-align:left;display:flex;flex-direction:column;gap:6px;padding:0}
+.hmain b{font-size:16px;font-weight:600;line-height:1.4}
+.hmain:hover b{color:var(--accent)}
+.hscore{font-family:var(--f-num);font-size:22px;font-weight:600;color:var(--mark);white-space:nowrap}
+.hscore small{font-size:13px;color:var(--ink3);font-weight:500}
+.tabbadge:not(:empty){display:inline-block;margin-left:4px;min-width:18px;padding:0 5px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;line-height:18px;text-align:center;font-weight:600}
+.memo{position:fixed;right:0;top:0;bottom:0;width:min(340px,100%);z-index:50;background:var(--card);border-left:1px solid var(--line);box-shadow:-6px 0 20px rgba(0,0,0,.08);padding:calc(12px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;overflow:auto}
+.memo-h{display:flex;align-items:center;gap:8px}
+.memo-list{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.memo-sub{font-size:12px;color:var(--ink3);margin-top:6px;letter-spacing:.06em}
+.memo-e{background:var(--sunk);border-radius:8px;padding:8px 10px}
+.memo-t,.memo-line span{white-space:pre-wrap;font-size:14px}
+.memo-del{border:0;background:none;color:var(--ink3);font-size:12px;padding:2px 4px}
+.memo-del:hover{color:var(--bad)}
+.memo-q{padding:10px 0;border-top:1px solid var(--line)}
+.memo-q:first-child{border-top:0}
+.memo-line{padding:4px 0 0 12px;border-left:2px solid var(--mark-soft);margin-top:6px}
+.good-t{color:var(--good)} .bad-t{color:var(--bad)}
+@media (min-width:1000px){body.memo-open .prac{right:340px} body.memo-open main.wrap{padding-right:356px} body.memo-open .bar-bottom{right:340px}}
+.todo{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px dashed var(--line)}
+.todo:first-child{border-top:0}
+.todo input{margin-top:3px;flex:none}
+.todo-t{font-size:15px;line-height:1.5}
+.todo.done .todo-t{text-decoration:line-through;color:var(--ink3)}
+.aigrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px}
+.aigrid label{display:flex;flex-direction:column;gap:4px;color:var(--ink2)}
+.aigrid input,.aigrid select{width:100%}
+.tip{position:fixed;z-index:120;pointer-events:none;background:var(--ink);color:var(--paper);font-size:12px;padding:6px 8px;border-radius:6px;max-width:240px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+</head>
+<body>
+<div id="app">
+  <header class="topbar" id="topbar">
+    <div class="topbar-in">
+      <div class="brand"><i aria-hidden="true"></i>行测错题本</div>
+      <nav class="tabs" id="tabs" aria-label="主导航">
+        <button class="tab" data-act="nav" data-v="home">试卷</button>
+        <button class="tab" data-act="nav" data-v="history">练习历史</button>
+        <button class="tab" data-act="nav" data-v="book">错题本</button>
+        <button class="tab" data-act="nav" data-v="notes">笔记</button>
+        <button class="tab" data-act="nav" data-v="stats">统计</button>
+        <button class="tab" data-act="nav" data-v="todos">待办<span class="tabbadge" id="todoBadge"></span></button>
+      </nav>
+      <span class="store-chip" id="storeChip">正在连接存储…</span>
+    </div>
+  </header>
+  <main id="view" class="wrap"><div class="empty">正在加载…</div></main>
+</div>
+<div id="overlay"></div>
+
+<script type="text/plain" id="kpTree">
+政治理论
+  马克思主义哲学
+    哲学基本问题与两大派别
+    唯物论
+      物质
+      意识
+      物质和意识的辩证关系
+    唯物辩证法
+      联系的普遍性
+      发展的永恒性
+      矛盾（对立统一）
+      量变与质变
+      辩证否定观
+    认识论
+      实践与认识
+      感性认识与理性认识
+      真理
+    唯物史观
+      社会存在与社会意识
+      生产力与生产关系
+      经济基础与上层建筑
+      人民群众创造历史
+  马克思主义政治经济学
+    商品二因素
+    劳动二重性
+    价值量与价值规律
+    货币的本质与职能
+    剩余价值与资本
+  新思想
+    总论
+      核心要义
+      “两个结合”
+      科学体系
+      中国式现代化
+    党的全面领导
+    以人民为中心与共同富裕
+    全面深化改革
+    推动高质量发展
+      新发展阶段
+      新发展理念
+      新发展格局
+      基本经济制度
+      乡村振兴与区域协调
+    教育强国、科技强国、人才强国
+    全过程人民民主与统一战线
+    全面依法治国
+    社会主义文化强国
+    保障和改善民生
+    生态文明
+    总体国家安全观
+    国防和军队建设
+    “一国两制”与祖国统一
+    中国特色大国外交
+    党的建设与全面从严治党
+常识判断
+  经济
+    需求
+    成本
+    市场结构类型
+    经济增长
+    通货膨胀
+    宏观调控手段
+    宏观经济政策
+    汇率
+    经济指标
+    经济效应
+  地理
+    太阳系
+    地球运动
+    月球
+    降水的类型
+    气象灾害
+    二十四节气
+    中国的邻国
+    中国的地势与地形
+    中国的河流和湖泊
+    中国的地理分界线
+  法律
+    宪法
+      特征和基本原则
+      宪法的修改
+      国体与政体
+      选举制度
+      自治制度
+      国家经济制度
+      公民的基本权利和义务
+      国家机构
+    行政法
+      行政行为
+      行政许可
+      行政处罚
+      治安管理处罚
+      行政强制
+      行政复议
+      行政诉讼
+      行政赔偿
+    民法
+      民事权利能力与行为能力
+      监护
+      宣告失踪和宣告死亡
+      民事法律行为的效力
+      诉讼时效
+      物权变动
+      担保物权
+      合同
+      无因管理与不当得利
+      违约责任
+      婚姻家庭
+      继承
+      侵权责任
+    刑法
+      基本原则与效力
+      犯罪构成
+      犯罪排除事由
+      故意犯罪的形态
+      共同犯罪
+      刑罚与累犯
+      缓刑、减刑和假释
+      具体罪名
+    法理学
+      法的概述与作用
+      法的渊源与效力层次
+      法律关系
+      法律责任
+      法的实施
+      法律与道德
+  科技
+    科技史
+    物理
+      力学
+      热学与物态变化
+      光学
+      声学
+    化学
+      非金属与金属
+      酸碱盐
+      有机化合物
+    生物
+      遗传
+      生物代谢与行为
+      人体系统
+      营养物质
+    医学
+      传染病防治
+      急救知识
+    生活常识
+      家用电器
+      食品安全
+      交通常识
+      灾害应对
+    高新技术
+      计算机技术
+      新能源技术
+      航天（探月、载人、行星探测、卫星发射）
+      生物工程技术
+  历史
+    考古文化遗址
+    中国古代盛世
+    古代变法与改革
+    古代战役
+    古代边疆治理
+    古代对外交流
+    古代政治制度
+    古代选官制度
+    古代赋税制度
+    古代农业发展
+    近代史
+    党的诞生和国民大革命
+    土地革命
+    抗日战争
+    解放战争
+  文化
+    古代思想
+    传统节日
+    古代科技成就
+    古代医学
+    古代称谓
+    古代建筑
+    汉字与书法
+    古代绘画
+    古代戏曲
+  文学
+    先秦诗歌
+    魏晋诗歌
+    唐宋八大家
+    唐诗
+    宋词
+    元曲
+    古代小说
+    史学著作
+言语理解与表达
+  片段阅读
+    主旨概括
+      五个关系（转折/递进/因果/条件/并列）
+      五个不重要
+      找主旨
+    意图判断
+    寓言故事
+    标题选择
+    态度判断
+    细节查找
+    词句理解
+  篇章阅读
+  语句表达
+    语句排序
+    语句填空
+    下文推断
+  逻辑填空
+    关联词（转折/递进/并列/因果）
+    空后解释
+    常用搭配
+    限定信息
+    比喻
+    后呼应
+    近义词辨析（义侧重/感情色彩/轻重）
+    宏观结构
+数量关系
+  数字推理
+    多级数列
+    多重数列
+    分数数列
+    幂次数列
+    递推数列
+    图形数阵
+  解题方法
+    倍数特性法
+    方程法
+    构造法
+  题型
+    周期问题
+    工程问题
+    行程问题
+    排列组合
+    概率问题
+    抽屉原理
+    容斥原理
+    等差、等比数列
+    几何问题
+    经济利润问题
+判断推理
+  图形推理
+    位置类
+    样式类
+    属性类
+    数量类
+    空间重构（六面体）
+    空间重构（四面体）
+    六面体带线条
+    截面图
+    立体拼接
+    平面拼接
+    功能元素
+    黑色块
+    黑白点
+    生活化的图形
+    汉字
+  科学推理
+    力学
+    电磁学
+    光学与声学
+    热学
+    化学与生物
+  定义判断
+  类比推理
+    概念外延
+    概念内涵
+    词语语法
+    词语语义
+  逻辑判断
+    翻译推理
+    分析推理
+    集合推理
+    真假推理
+    论证（加强/削弱）
+    归纳推理
+    结构评价
+    原因解释
+    事件排序
+资料分析
+  统计术语
+  速算技巧
+  基期量与现期量
+  增长率
+    一般增长率
+    间隔增长率
+    混合增长率
+    年均增长率
+  增长量
+  比重
+    现期比重
+    基期比重
+    两期比重
+  倍数
+  平均数
+    现期平均数
+    基期平均数
+    两期平均数
+  简单计算
+</script>
+<script src="vendor/pdf.min.js"></script>
+<script src="vendor/pdf.worker.min.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
+<script>
+"use strict";
+/* =====================================================================
+   Utilities
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const uid = (p = "") => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const pad3 = n => String(n).padStart(3, "0");
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const fmtT = s => { s = Math.round(s || 0); const m = Math.floor(s / 60), x = s % 60; return m >= 60 ? `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}:${String(x).padStart(2, "0")}` : `${String(m).padStart(2, "0")}:${String(x).padStart(2, "0")}`; };
+const fmtDur = s => { s = Math.round(s || 0); if (s < 60) return s + "秒"; const m = Math.floor(s / 60); return m < 60 ? `${m}分${s % 60}秒` : `${Math.floor(m / 60)}时${m % 60}分`; };
+const fmtDate = t => { const d = new Date(t); return `${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
+const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+const toHalf = s => s.replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+const CN_NUM = "一二三四五六七八九十";
+let toastTimer;
+function toast(msg, ms = 2600) { let t = $("#toastEl"); if (!t) { t = document.createElement("div"); t.id = "toastEl"; t.className = "toast"; t.setAttribute("role", "status"); document.body.appendChild(t); } t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, ms); }
+const ICON = {
+  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z"/></svg>',
+  starf: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z"/></svg>',
+  pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg>',
+  eraser: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M8 20h12M5 15l8-8 5 5-6 6H8z"/></svg>',
+  undo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
+  memo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h10l4 4v14H5z"/><path d="M14 3v5h5M8 13h8M8 17h5"/></svg>',
+  card: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>',
+};
+
+/* =====================================================================
+   Storage: claude db + assets when available, IndexedDB otherwise
+   ===================================================================== */
+const S = { db: null, assets: null, dl: null, idb: null, cloud: false, urlCache: new Map() };
+const COLS = ["papers", "questions", "attempts", "qstate", "meta", "memos", "todos"];
+function idbOpen() {
+  return new Promise(res => {
+    try {
+      const r = indexedDB.open("cuotiben", 2);
+      r.onupgradeneeded = () => { const d = r.result; for (const c of [...COLS, "blobs"]) if (!d.objectStoreNames.contains(c)) d.createObjectStore(c); };
+      r.onsuccess = () => res(r.result); r.onerror = () => res(null);
+    } catch { res(null); }
+  });
+}
+function idbReq(store, mode, fn) {
+  return new Promise((res, rej) => {
+    if (!S.idb) return res(undefined);
+    try { const tx = S.idb.transaction(store, mode); const r = fn(tx.objectStore(store)); tx.oncomplete = () => res(r && r.result); tx.onerror = () => rej(tx.error); } catch (e) { rej(e); }
+  });
+}
+const MEM = {}; // last-resort in-memory store
+/* ---------- bring-your-own-key AI (OpenAI-compatible chat API) ---------- */
+const AI_PRESETS = {
+  deepseek: { name: "DeepSeek", base: "https://api.deepseek.com", model: "deepseek-chat" },
+  qwen: { name: "通义千问（阿里云百炼）", base: "https://dashscope.aliyuncs.com/compatible-mode/v1", model: "qwen-plus" },
+  moonshot: { name: "Kimi（月之暗面）", base: "https://api.moonshot.cn/v1", model: "moonshot-v1-8k" },
+  zhipu: { name: "智谱 GLM", base: "https://open.bigmodel.cn/api/paas/v4", model: "glm-4-flash" },
+  openai: { name: "OpenAI", base: "https://api.openai.com/v1", model: "gpt-4o-mini" },
+  custom: { name: "其他（OpenAI 兼容接口）", base: "", model: "" },
+};
+function aiCfg() { try { return JSON.parse(localStorage.getItem("cuotiben.ai") || "null"); } catch { return null; } }
+function makeSample(cfg) {
+  const call = async prompt => {
+    let r;
+    try {
+      r = await fetch(cfg.base.replace(/\/+$/, "") + "/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + cfg.key }, body: JSON.stringify({ model: cfg.model, temperature: 0.3, messages: [{ role: "user", content: prompt }] }) });
+    } catch (e) { throw { code: "network", message: "连不上 AI 服务（网络问题，或该服务商不允许网页直接调用）" }; }
+    if (r.status === 401 || r.status === 403) throw { code: "auth", message: "API Key 无效或没有权限" };
+    if (r.status === 429) throw { code: "rate_limited", message: "请求太频繁或额度用完" };
+    if (!r.ok) throw { code: "http", message: "AI 服务返回错误 " + r.status };
+    const j = await r.json(); return j.choices?.[0]?.message?.content || "";
+  };
+  const f = async p => ({ text: await call(typeof p === "string" ? p : p.map(x => x.content).join("\n\n")), truncated: false });
+  f.json = async (p, opts) => { const t = await call(p + "\n\n只输出 JSON，不要任何解释或代码块标记。"); const m = t.match(/\{[\s\S]*\}/); if (!m) throw { code: "parse", message: "AI 返回的内容不是 JSON，请重试" }; try { return JSON.parse(m[0]); } catch { throw { code: "parse", message: "AI 返回的 JSON 无法解析，请重试" }; } };
+  return f;
+}
+function aiSettingsCard() {
+  const cfg = aiCfg() || { provider: "deepseek", ...AI_PRESETS.deepseek, key: "" };
+  return `<h2 class="section-title">AI 功能（可选）</h2>
+  <div class="card pad">
+    <p class="small muted" style="margin:0 0 10px">填入你自己的大模型 API Key 后，可以使用“AI 推荐知识点”“AI 归类”“AI 写总结 + 待办”。Key 只保存在这台设备的浏览器里，请求直接从浏览器发给你选的服务商，费用由你的账号承担。不填也不影响其他功能。</p>
+    <div class="aigrid">
+      <label class="small">服务商<select id="aiProv">${Object.entries(AI_PRESETS).map(([k, v]) => `<option value="${k}" ${cfg.provider === k ? "selected" : ""}>${esc(v.name)}</option>`).join("")}</select></label>
+      <label class="small">模型<input type="text" id="aiModel" value="${esc(cfg.model || "")}"></label>
+      <label class="small" style="grid-column:1/-1">接口地址<input type="text" id="aiBase" value="${esc(cfg.base || "")}" placeholder="https://…/v1"></label>
+      <label class="small" style="grid-column:1/-1">API Key<input type="password" id="aiKey" value="${esc(cfg.key || "")}" placeholder="sk-…" autocomplete="off"></label>
+    </div>
+    <div class="row" style="margin-top:10px"><span class="small faint grow" id="aiState">${S.sample ? "已启用" : "未启用"}</span><button class="btn" data-act="aiClear">清除</button><button class="btn" data-act="aiTest">测试</button><button class="btn primary" data-act="aiSave">保存</button></div>
+  </div>`;
+}
+function readAiForm() { return { provider: $("#aiProv").value, base: $("#aiBase").value.trim(), model: $("#aiModel").value.trim(), key: $("#aiKey").value.trim() }; }
+async function initStorage() {
+  S.idb = await idbOpen();
+  try {
+    if (window.claude && claude.use) {
+      const [db, assets, dl, sample] = await Promise.all([claude.use("db"), claude.use("assets"), claude.use("downloads"), claude.use("sample")]);
+      S.db = db; S.assets = assets; S.dl = dl; S.sample = sample;
+    }
+  } catch (e) { console.warn(e); }
+  S.cloud = !!S.db;
+  $("#storeChip").textContent = S.cloud ? (S.assets ? "已云端保存" : "记录云端 · 图片仅本机") : (S.idb ? "数据保存在此设备" : "临时模式（刷新会丢失）");
+  if (!S.sample) { const cfg = aiCfg(); if (cfg && cfg.key && cfg.base && cfg.model) S.sample = makeSample(cfg); }
+}
+async function retry(fn) {
+  for (let i = 0; ; i++) {
+    try { return await fn(); }
+    catch (e) { const c = e && e.code; if (i < 4 && (c === "unavailable" || c === "store_unavailable" || c === "resource_exhausted" || c === "rate_limited")) { await sleep((c === "unavailable" || c === "store_unavailable" ? 500 : 1500 * (i + 1)) + Math.random() * 500); continue; } throw e; }
+  }
+}
+/* background write queue: keeps the UI moving while many small writes trickle out */
+const WQ = { list: [], running: false, failed: 0 };
+function queueWrite(col, id, data) { WQ.list = WQ.list.filter(x => !(x.col === col && x.id === id)); WQ.list.push({ col, id, data }); runQueue(); }
+async function runQueue() {
+  if (WQ.running) return; WQ.running = true;
+  while (WQ.list.length) { const job = WQ.list.shift(); try { await dbPut(job.col, job.id, job.data); } catch (e) { console.warn("save failed", e); WQ.failed++; if (WQ.failed === 1) toast("有部分记录没保存成功（" + (e.code || e.message) + "），稍后会再试", 5000); WQ.list.push(job); await sleep(5000); } }
+  WQ.running = false; if (WQ.failed) { WQ.failed = 0; toast("记录已全部保存"); }
+}
+async function dbAll(col) {
+  if (S.db) {
+    const out = []; let last = null;
+    for (let guard = 0; guard < 50; guard++) {
+      let q = S.db.collection(col).orderBy("k").limit(500);
+      if (last !== null) q = q.where("k", ">", last);
+      const snap = await retry(() => q.get());
+      snap.docs.forEach(d => out.push({ id: d.id, ...d.data() }));
+      if (snap.size < 500) break; last = snap.docs[snap.docs.length - 1].data().k;
+    }
+    return out;
+  }
+  if (S.idb) {
+    const keys = await idbReq(col, "readonly", s => s.getAllKeys()); const vals = await idbReq(col, "readonly", s => s.getAll());
+    return (vals || []).map((v, i) => ({ id: keys[i], ...v }));
+  }
+  return Object.entries(MEM[col] || {}).map(([id, v]) => ({ id, ...v }));
+}
+async function dbPut(col, id, data) {
+  const body = JSON.parse(JSON.stringify({ ...data, k: id })); delete body.id; // drops undefined / NaN-unsafe values
+  if (S.db) return retry(() => S.db.collection(col).doc(id).set(body));
+  if (S.idb) return idbReq(col, "readwrite", s => s.put(body, id));
+  (MEM[col] ||= {})[id] = body;
+}
+async function dbDel(col, id) {
+  if (S.db) return retry(() => S.db.collection(col).doc(id).delete());
+  if (S.idb) return idbReq(col, "readwrite", s => s.delete(id));
+  delete (MEM[col] || {})[id];
+}
+async function putImage(blob) {
+  if (S.assets) {
+    try { const r = await retry(() => S.assets.upload(blob, { type: "image/jpeg" })); S.urlCache.set("a:" + r.id, r.url); return "a:" + r.id; }
+    catch (e) { if (e && e.code === "quota_or_state") throw new Error("图片存储空间已满"); console.warn("asset upload failed, using local", e); }
+  }
+  const key = uid("img");
+  if (S.idb) await idbReq("blobs", "readwrite", s => s.put(blob, key)); else (MEM.blobs ||= {})[key] = blob;
+  S.urlCache.set("i:" + key, URL.createObjectURL(blob));
+  return "i:" + key;
+}
+async function imgURL(ref) {
+  if (!ref) return "";
+  if (S.urlCache.has(ref)) return S.urlCache.get(ref);
+  let url = "";
+  if (ref.startsWith("a:")) url = "/_blob/" + ref.slice(2);
+  else if (ref.startsWith("i:")) {
+    const b = S.idb ? await idbReq("blobs", "readonly", s => s.get(ref.slice(2))) : (MEM.blobs || {})[ref.slice(2)];
+    url = b ? URL.createObjectURL(b) : "";
+  }
+  S.urlCache.set(ref, url); return url;
+}
+async function hydrate(root = document) {
+  for (const im of $$("img[data-ref]", root)) { if (im.dataset.done) continue; im.dataset.done = 1; const u = await imgURL(im.dataset.ref); if (u) im.src = u; else im.alt = "图片丢失"; }
+}
+async function delImage(ref) {
+  try { if (ref.startsWith("a:") && S.assets) await S.assets.delete(ref.slice(2)); else if (ref.startsWith("i:") && S.idb) await idbReq("blobs", "readwrite", s => s.delete(ref.slice(2))); } catch (e) { console.warn(e); }
+}
+async function loadBlob(ref) { const u = await imgURL(ref); if (!u) return null; const r = await fetch(u); return r.ok ? r.blob() : null; }
+async function saveFile(filename, data) {
+  if (S.dl) {
+    try { await S.dl.save({ filename, data }); toast("已导出 " + filename); }
+    catch (e) { if (e.code === "declined") toast("已取消导出"); else if (e.code === "rate_limited") toast("上一个导出还没确认，稍后再试"); else toast("导出失败：" + (e.message || e.code)); }
+    return;
+  }
+  if (!window.claude) { const b = data instanceof Blob ? data : new Blob([data]); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = filename; a.style.display = "none"; document.body.appendChild(a); a.click(); setTimeout(() => { a.remove(); URL.revokeObjectURL(a.href); }, 4000); toast("已导出 " + filename); return; }
+  toast("当前浏览器不支持下载文件");
+}
+
+/* =====================================================================
+   App state
+   ===================================================================== */
+const MODULES = ["政治理论", "常识判断", "综合知识", "言语理解与表达", "选词填空", "逻辑填空", "片段阅读", "语句表达", "阅读理解", "篇章阅读", "数量关系", "数字推理", "数学运算", "数字应用", "判断推理", "科学推理", "图形推理", "定义判断", "类比推理", "逻辑判断", "演绎推理", "分析推理", "资料分析", "综合分析"];
+/* exam layouts: modules in paper order with question counts; pts = 分值/题, min = 建议用时（分钟） */
+const TEMPLATES = [
+  { id: "guokao-fsj", name: "国考 · 副省级（135题）", mods: [["政治理论", 20, 0.5, 12], ["常识判断", 15, 0.5, 8], ["言语理解与表达", 30, 0.8, 30], ["数量关系", 15, 0.8, 10], ["图形推理", 10, 0.8, 10], ["定义判断", 10, 0.7, 10], ["类比推理", 5, 0.7, 5], ["逻辑判断", 10, 0.8, 10], ["资料分析", 20, 1, 25]] },
+  { id: "bj-2026", name: "北京选调 · 2026版（65题）", mods: [["政治理论", 10, 0.6], ["常识判断", 10, 0.6], ["言语理解与表达", 5, 0.8], ["篇章阅读", 5, 0.8], ["数量关系", 5, 0.8], ["科学推理", 5, 0.8], ["图形推理", 5, 0.8], ["逻辑判断", 10, 0.8], ["资料分析", 10, 1]] },
+  { id: "bj-2025", name: "北京选调 · 2025真题顺序（65题）", mods: [["综合知识", 20, 0.6], ["言语理解与表达", 15, 0.8], ["图形推理", 5, 0.8], ["演绎推理", 5, 0.8], ["定义判断", 10, 0.8], ["资料分析", 10, 1]] },
+  { id: "sh-2026", name: "上海选调 · 2026（120题）", mods: [["政治理论", 20, null, 12], ["常识判断", 10, null, 9], ["选词填空", 5, null, 5], ["语句表达", 5, null, 5], ["阅读理解", 15, null, 15], ["科学推理", 10, null, 10], ["图形推理", 10, null, 10], ["分析推理", 10, null, 10], ["数字推理", 5, null, 5], ["数字应用", 10, null, 10], ["资料分析", 15, null, 15], ["综合分析", 5, null, 7]] },
+  { id: "gd-2026", name: "广东选调 · 2026（100题）", mods: [["政治理论", 10], ["常识判断", 5], ["片段阅读", 10], ["逻辑填空", 5], ["图形推理", 10], ["逻辑判断", 20], ["类比推理", 5], ["科学推理", 5], ["数字推理", 5], ["数学运算", 10], ["资料分析", 15]] },
+];
+function applyTemplate(st, id) {
+  const t = TEMPLATES.find(x => x.id === id); st.template = id || ""; if (!t) return;
+  let from = st.firstNum || 1; st.modules = t.mods.map(([name, n, pts, min]) => { const m = { name, from, pts: pts ?? null, min: min ?? null }; from += n; return m; });
+}
+function modOf(q) { const p = paperOf(q.pid); let m = null; for (const x of (p?.modules || [])) if (q.n >= x.from) m = x; return m; }
+const D = { papers: [], questions: new Map(), attempts: [], qstate: new Map(), meta: {}, memos: new Map(), todos: [] };
+const UI = { histTab: "paper", histTime: "all", histState: "all", histEdit: false, view: "home", reviewList: [], reviewIdx: 0, reviewFrom: null, bookSel: new Set(), bookOpen: new Set(), noteSel: new Set(), bookPaper: "all", bookSort: "desc", reportId: null };
+async function loadData() {
+  const [papers, questions, attempts, qstate, memos, todos] = await Promise.all(["papers", "questions", "attempts", "qstate", "memos", "todos"].map(dbAll));
+  D.memos = new Map(memos.map(m => [m.id, m]));
+  D.todos = todos.sort((a, b) => (a.done - b.done) || (b.createdAt - a.createdAt));
+  D.papers = papers.sort((a, b) => b.createdAt - a.createdAt);
+  D.questions = new Map(questions.map(q => [q.id, q]));
+  D.attempts = attempts.sort((a, b) => b.startedAt - a.startedAt);
+  D.qstate = new Map(qstate.map(s => [s.id, s]));
+}
+const qs = id => D.qstate.get(id) || { id };
+const paperOf = id => D.papers.find(p => p.id === id);
+function modOrder(name) { const i = MODULES.indexOf(name); return i < 0 ? 99 : i; }
+async function setQS(id, patch) { const cur = { ...qs(id), ...patch, id }; D.qstate.set(id, cur); await dbPut("qstate", id, cur); return cur; }
+const qLabel = q => { const p = paperOf(q.pid); return `${p ? p.title : "已删除的试卷"} · 第${q.n}题`; };
+/* ---------- knowledge-point tree ---------- */
+const KP = (() => {
+  const root = { name: "", path: "", children: [], depth: -1 }, all = new Map(), order = new Map(); const stack = [root]; let i = 0;
+  for (const raw of ($("#kpTree")?.textContent || "").split("\n")) {
+    if (!raw.trim()) continue; const d = Math.floor(raw.match(/^ */)[0].length / 2), name = raw.trim(), parent = stack[d] || root;
+    const node = { name, path: parent.path ? parent.path + "/" + name : name, children: [], depth: d, parent };
+    parent.children.push(node); stack[d + 1] = node; stack.length = d + 2; all.set(node.path, node); order.set(node.path, i++);
+  }
+  return { root, all, order };
+})();
+const MOD_ROOTS = { "选词填空": ["言语理解与表达/逻辑填空"], "逻辑填空": ["言语理解与表达/逻辑填空"], "片段阅读": ["言语理解与表达/片段阅读"], "阅读理解": ["言语理解与表达/片段阅读", "言语理解与表达/篇章阅读"], "篇章阅读": ["言语理解与表达/篇章阅读", "言语理解与表达/片段阅读"], "语句表达": ["言语理解与表达/语句表达"], "数字推理": ["数量关系/数字推理"], "数学运算": ["数量关系"], "数字应用": ["数量关系"], "科学推理": ["判断推理/科学推理", "常识判断/科技"], "分析推理": ["判断推理/逻辑判断"], "综合分析": ["政治理论", "常识判断", "资料分析"], "政治理论": ["政治理论"], "常识判断": ["常识判断"], "综合知识": ["政治理论", "常识判断"], "言语理解与表达": ["言语理解与表达"], "数量关系": ["数量关系"], "判断推理": ["判断推理"], "图形推理": ["判断推理/图形推理"], "定义判断": ["判断推理/定义判断"], "类比推理": ["判断推理/类比推理"], "逻辑判断": ["判断推理/逻辑判断"], "演绎推理": ["判断推理/逻辑判断"], "资料分析": ["资料分析"] };
+const rootsFor = m => (MOD_ROOTS[m] || KP.root.children.map(c => c.path)).map(p => KP.all.get(p)).filter(Boolean);
+const kpShort = p => { const s = p.split("/"); return s.length > 2 ? s.slice(-2).join(" › ") : s.join(" › "); };
+const kpUnder = roots => { const out = []; const walk = n => { out.push(n.path); n.children.forEach(walk); }; roots.forEach(walk); return out; };
+const qSnippet = q => (q.text || "").replace(/^\d{1,3}[\.．、]/, "").slice(0, 60) || `第${q.n}题`;
+
+/* =====================================================================
+   PDF reading & question detection
+   ===================================================================== */
+if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = ""; }
+async function openPdf(file) {
+  if (!window.pdfjsLib) throw new Error("PDF 组件没有加载成功，请检查网络后刷新");
+  const data = new Uint8Array(await file.arrayBuffer());
+  return pdfjsLib.getDocument({ data, isEvalSupported: false, disableFontFace: false }).promise;
+}
+async function pageLines(page) {
+  const vp = page.getViewport({ scale: 1 });
+  const tc = await page.getTextContent();
+  const items = [];
+  for (const it of tc.items) {
+    if (!it.str || !it.str.trim()) continue;
+    const tr = pdfjsLib.Util.transform(vp.transform, it.transform);
+    const h = Math.max(4, Math.hypot(tr[2], tr[3]));
+    items.push({ s: it.str, x: tr[4], y: tr[5], h, w: it.width * (vp.scale || 1) });
+  }
+  items.sort((a, b) => a.y - b.y || a.x - b.x);
+  const lines = [];
+  for (const it of items) {
+    const L = lines.find(l => Math.abs(l.y - it.y) < Math.max(3, Math.min(l.h, it.h) * 0.55));
+    if (L) { L.items.push(it); L.h = Math.max(L.h, it.h); } else lines.push({ y: it.y, h: it.h, items: [it] });
+  }
+  for (const L of lines) {
+    L.items.sort((a, b) => a.x - b.x);
+    let t = "", prevEnd = null;
+    for (const it of L.items) { if (prevEnd !== null && it.x - prevEnd > L.h * 0.6 && /[A-Za-z0-9]$/.test(t) && /^[A-Za-z0-9]/.test(it.s)) t += " "; t += it.s; prevEnd = it.x + it.w; }
+    L.text = t; L.c = toHalf(t.replace(/\s+/g, "")); L.x0 = L.items[0].x; L.x1 = Math.max(...L.items.map(i => i.x + i.w)); L.top = L.y - L.h;
+  }
+  lines.sort((a, b) => a.y - b.y);
+  return { w: vp.width, h: vp.height, lines };
+}
+function guessModule(s) {
+  const t = s.replace(/[：:，,。.\s]/g, "");
+  const map = [["科学推理", "科学推理"], ["数字推理", "数字推理"], ["数学运算", "数学运算"], ["数字应用", "数字应用"], ["分析推理", "分析推理"], ["选词填空", "选词填空"], ["逻辑填空", "逻辑填空"], ["语句表达", "语句表达"], ["片段阅读", "片段阅读"], ["阅读理解", "阅读理解"], ["篇章阅读", "篇章阅读"], ["综合分析", "综合分析"], ["政治", "政治理论"], ["常识", "常识判断"], ["综合知识", "综合知识"], ["公共基础", "综合知识"], ["言语", "言语理解与表达"], ["数量", "数量关系"], ["数理", "数量关系"], ["图形", "图形推理"], ["定义", "定义判断"], ["类比", "类比推理"], ["逻辑", "逻辑判断"], ["演绎", "演绎推理"], ["判断推理", "判断推理"], ["资料", "资料分析"]];
+  for (const [k, v] of map) if (t.includes(k)) return v;
+  return null;
+}
+function detectStructure(pages) {
+  const n = pages.length, hasText = pages.filter(p => p.lines.length > 3).length >= Math.max(1, n * 0.4);
+  // header / footer bands from repeated lines
+  let head = 0.045, foot = 0.955;
+  if (hasText) {
+    const count = new Map();
+    pages.forEach(p => new Set(p.lines.map(l => l.c.replace(/\d+/g, "#"))).forEach(k => count.set(k, (count.get(k) || 0) + 1)));
+    let hb = 0, fb = 1;
+    pages.forEach(p => p.lines.forEach(l => {
+      const k = l.c.replace(/\d+/g, "#"); const rep = count.get(k) >= Math.max(2, n * 0.4) || /^[-—·•第\s#]*#[页共,，\s#\-—]*$/.test(k) && k.length < 14;
+      if (!rep) return;
+      const yt = l.top / p.h, yb = l.y / p.h;
+      if (yb < 0.14) hb = Math.max(hb, yb + 0.006);
+      if (yt > 0.86) fb = Math.min(fb, yt - 0.006);
+    }));
+    head = Math.max(0.02, hb || 0.03); foot = Math.min(0.985, fb < 1 ? fb : 0.97);
+  }
+  const markers = [], modules = [];
+  let last = null, stop = false;
+  pages.forEach((p, pi) => {
+    if (stop) return;
+    const xs = p.lines.map(l => l.x0).sort((a, b) => a - b); const left = xs.length ? xs[Math.floor(xs.length * 0.1)] : 0;
+    for (const l of p.lines) {
+      if (stop) break;
+      const yf = l.top / p.h; if (yf < head || l.y / p.h > foot) continue;
+      const c = l.c;
+      // section heading
+      const part = c.match(/^第[一二三四五六七八九十]部分[:：、.\s]?(.{0,14})/);
+      const sec = c.match(/^([一二三四五六七八九十]{1,3})[、.,，]\s*(.{0,14})/) || (part ? ["", "", part[1]] : null);
+      if (sec && c.length < 120 && !/^\d/.test(c)) {
+        if (c.length < 40 && /^(第[一二三四]部分|[一二三四五六七八九十]{1,3}[、.,，].{0,6})(主观|申论|作文)/.test(c)) { markers.push({ page: pi, y: l.top, type: "cut", auto: 1 }); stop = true; break; }
+        const mod = guessModule(sec[2] || sec[1] || "");
+        if (mod) { modules.push({ name: mod, from: (last ?? 0) + 1, auto: 1 }); markers.push({ page: pi, y: l.top, type: "cut", auto: 1 }); }
+        continue;
+      }
+      // material
+      const range = c.match(/回答(\d{1,3})[-—–~～至到]{1,2}(\d{1,3})题/);
+      const centered = l.x0 > p.w * 0.3 && c.length <= 6 && /[一二三四五六七八九十]/.test(c) && !/[\u4e00-\u9fff]{2}/.test(c.replace(/[一二三四五六七八九十]/g, "x"));
+      if (/^[（(][一二三四五六七八九十]{1,3}[)）]$/.test(c) || centered || (range && /^(根据|阅读|请根据)/.test(c))) {
+        markers.push({ page: pi, y: l.top, type: "mat", range: range ? [+range[1], +range[2]] : null, auto: 1 }); continue;
+      }
+      // question start
+      const m = c.match(/^(\d{1,3})[.．、](?!\d)/) || c.match(/^(\d{1,3})(?:[.．、](?=\d)|(?=[\u4e00-\u9fff“"‘]))/);
+      if (m && l.x0 <= left + p.w * 0.06) {
+        const k = +m[1], strict = !/^\d{1,3}[.．、](?!\d)/.test(c);
+        const ok = last === null ? k <= 200 && (!strict || k === 1) : strict ? k === last + 1 : (k > last && k <= last + 4);
+        if (ok) { markers.push({ page: pi, y: l.top, type: "q", num: k, auto: 1 }); last = k; }
+      }
+    }
+  });
+  // collapse material markers that sit right next to each other (e.g. "（二）" + "根据所给材料，回答…")
+  for (let i = markers.length - 1; i > 0; i--) { const a = markers[i - 1], b = markers[i]; if (a.type === "mat" && b.type === "mat" && a.page === b.page && b.y - a.y < 60) { a.range ||= b.range; markers.splice(i, 1); } }
+  // merge modules with same start
+  const mods = [];
+  for (const m of modules) { const prev = mods[mods.length - 1]; if (prev && prev.from === m.from) prev.name = m.name; else mods.push(m); }
+  return { hasText, head, foot, markers, modules: mods };
+}
+function markerSort(a, b) { return a.page - b.page || a.y - b.y; }
+/* Build per-question regions from markers. Returns {qs:[{n, slices, mat}], mats:{key:{slices}}} */
+function buildRegions(pages, st) {
+  const mk = [...st.markers].sort(markerSort);
+  const H = i => pages[i].h;
+  const out = [], mats = {};
+  const firstNum = st.firstNum || 1;
+  let qi = 0;
+  const regionFrom = (i) => {
+    const m = mk[i], nx = mk[i + 1];
+    const slices = [];
+    const endPage = nx ? nx.page : m.page;
+    for (let p = m.page; p <= endPage; p++) {
+      const top = p === m.page ? Math.max(m.y - 6, st.head * H(p)) : st.head * H(p);
+      const bot = nx && p === nx.page ? Math.min(nx.y - 2, st.foot * H(p)) : st.foot * H(p);
+      if (bot - top > 10) slices.push({ page: p, top, bot });
+    }
+    return slices;
+  };
+  const moduleOf = n => { let name = "未分类"; for (const m of [...st.modules].sort((a, b) => a.from - b.from)) if (n >= m.from) name = m.name; return name; };
+  let curMat = null;
+  mk.forEach((m, i) => {
+    if (m.type === "cut") { curMat = null; return; }
+    if (m.type === "mat") { const key = "m" + i; mats[key] = { slices: regionFrom(i), range: m.range, mod: null }; curMat = key; return; }
+    const n = firstNum + qi++;
+    const mod = moduleOf(n);
+    let mat = null;
+    if (curMat) {
+      const M = mats[curMat];
+      if (M.range) { if (n >= M.range[0] && n <= M.range[1]) mat = curMat; else if (n > M.range[1]) curMat = null; }
+      else { if (M.mod === null) M.mod = mod; M.used = (M.used || 0) + 1; if (M.mod === mod && M.used <= 5) mat = curMat; else curMat = null; }
+    }
+    out.push({ n, mod, mat, slices: regionFrom(i), marker: m });
+  });
+  return { qs: out, mats };
+}
+function regionText(pages, slices) {
+  const parts = [];
+  for (const s of slices) for (const l of pages[s.page].lines) if (l.top >= s.top - 2 && l.y <= s.bot + 4) parts.push(l.text.replace(/(?<=[一-鿿，。、；：“”（）])\s+(?=[一-鿿，。、；：“”（）])/g, ""));
+  return parts.join("\n").slice(0, 4000);
+}
+
+/* ---------- in-browser OCR for scanned PDFs (tesseract, files published with the page) ---------- */
+let OCRW = null;
+const ownURL = u => new URL(u, document.baseURI).href;
+async function ocrWorker(onProg) {
+  if (OCRW) return OCRW;
+  if (!window.Tesseract) await new Promise((res, rej) => { const sc = document.createElement("script"); sc.src = ownURL("ocr/tesseract.min.js"); sc.onload = res; sc.onerror = () => rej(new Error("文字识别组件加载失败")); document.head.appendChild(sc); });
+  const r = await fetch(ownURL("ocr/lang/chi_sim.traineddata.wasm")); if (!r.ok) throw new Error("识别模型下载失败（" + r.status + "）");
+  const data = new Uint8Array(await r.arrayBuffer());
+  OCRW = await Tesseract.createWorker([{ code: "chi_sim", data }], 1, { workerPath: ownURL("ocr/worker.min.js"), corePath: ownURL("ocr/core/"), workerBlobURL: false, cacheMethod: "none", logger: m => onProg && onProg(m) });
+  await OCRW.setParameters({ tessedit_pageseg_mode: "6", preserve_interword_spaces: "1" });
+  return OCRW;
+}
+async function ocrPage(page) {
+  const SC = 2.2, c = await renderPageCanvas(page, SC), vp = page.getViewport({ scale: 1 });
+  const { data } = await OCRW.recognize(c, {}, { blocks: true, text: false });
+  const lines = [];
+  for (const b of data.blocks || []) for (const pa of b.paragraphs || []) for (const ln of pa.lines || []) {
+    const t = (ln.text || "").replace(/\n/g, "").trim(); if (!t) continue; const bb = ln.bbox;
+    const top = bb.y0 / SC, y = bb.y1 / SC;
+    lines.push({ text: t.replace(/(?<=[\u4e00-\u9fff，。、；：“”（）])\s+(?=[\u4e00-\u9fff，。、；：“”（）])/g, ""), c: toHalf(t.replace(/\s+/g, "")), x0: bb.x0 / SC, x1: bb.x1 / SC, y, top, h: y - top, items: [] });
+  }
+  c.width = c.height = 0; lines.sort((a, b) => a.top - b.top);
+  return { w: vp.width, h: vp.height, lines, ocr: true };
+}
+/* OCR the pages of `pdf` whose text layer is missing (or all pages when force) */
+async function ocrPages(pdf, pages, { force = false, label = "卷子", onStep } = {}) {
+  const todo = pages.map((p, i) => i).filter(i => force || pages[i].lines.length < 3);
+  if (!todo.length) return 0;
+  onStep?.(`首次使用需要下载文字识别模型（约 6MB）…`, 0);
+  await ocrWorker();
+  for (let k = 0; k < todo.length; k++) {
+    onStep?.(`正在识别${label}文字：第 ${k + 1}/${todo.length} 页（扫描版，每页几秒）`, k / todo.length);
+    pages[todo[k]] = await ocrPage(await pdf.getPage(todo[k] + 1));
+  }
+  return todo.length;
+}
+
+/* ---------- answer PDF parsing ---------- */
+async function pdfFullText(pdf, onStep) {
+  const pages = [];
+  for (let i = 1; i <= pdf.numPages; i++) pages.push(await pageLines(await pdf.getPage(i)));
+  if (pages.filter(p => p.lines.length >= 3).length < pdf.numPages * 0.5) await ocrPages(pdf, pages, { label: "答案", onStep });
+  let txt = "";
+  for (const p of pages) {
+    const rights = p.lines.map(l => l.x1).sort((a, b) => a - b); const maxR = rights.length ? rights[Math.floor(rights.length * 0.9)] : p.w;
+    for (const l of p.lines) {
+      if (l.top / p.h < 0.03 || l.y / p.h > 0.975) continue;
+      txt += l.text.replace(/(?<=[一-鿿，。、；：“”（）])\s+(?=[一-鿿，。、；：“”（）])/g, "");
+      txt += (l.x1 >= maxR - p.w * 0.03 && !/[。！？：:”]$/.test(l.c)) ? "" : "\n";
+    }
+    txt += "\n";
+  }
+  return { pages, txt };
+}
+function parseAnswers(txt) {
+  const T = toHalf(txt);
+  const ans = {}, ana = {};
+  for (const m of T.matchAll(/(\d{1,3})\s*[-—–~～]\s*(\d{1,3})\s*[：:.、]?\s*([A-D](?:\s?[A-D]){1,9})(?![A-Za-z])/g)) {
+    const a = +m[1], letters = m[3].replace(/\s/g, "");
+    [...letters].forEach((ch, i) => { if (!ans[a + i]) ans[a + i] = ch; });
+  }
+  for (const line of T.split("\n")) {
+    const ms = [...line.matchAll(/(\d{1,3})\s*[.．、:：]\s*([A-D])(?![A-Za-z一-鿿])/g)];
+    if (ms.length >= 3) ms.forEach(m => { if (!ans[+m[1]]) ans[+m[1]] = m[2]; });
+  }
+  const starts = [];
+  const re = /(^|\n)[ \t]*(\d{1,3})\s*[.．、]\s*(?=【|答案|正确答案|〔|\[答案|解析)/g;
+  let m, lastN = 0;
+  while ((m = re.exec(T))) { const n = +m[2]; if (n > lastN && n <= lastN + 6) { starts.push({ n, at: m.index + m[1].length }); lastN = n; } }
+  starts.forEach((s, i) => {
+    let block = T.slice(s.at, i + 1 < starts.length ? starts[i + 1].at : T.length);
+    const cut = block.search(/\n\s*(第[二三四]部分|主观题|申论)/); if (cut > 0) block = block.slice(0, cut);
+    const a = block.match(/【答案】\s*([A-D])/) || block.match(/\[答案\]\s*([A-D])/);
+    let letter = a && a[1];
+    if (!letter) { const all = [...block.matchAll(/(?:正确答案|答案)\s*(?:为|是|选|：|:)?\s*([A-D])(?![A-Za-z])/g)]; if (all.length) letter = all[all.length - 1][1]; }
+    if (letter) ans[s.n] = letter;
+    ana[s.n] = block.replace(/^\s*\d{1,3}\s*[.．、]\s*/, "").replace(/\n{3,}/g, "\n\n").trim();
+  });
+  return { ans, ana };
+}
+
+/* =====================================================================
+   Rendering helpers
+   ===================================================================== */
+async function renderPageCanvas(page, scale) {
+  const vp = page.getViewport({ scale });
+  const c = document.createElement("canvas"); c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+  const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+  return c;
+}
+function trimBottom(canvas, minH = 20) {
+  const ctx = canvas.getContext("2d"), w = canvas.width; let h = canvas.height;
+  const data = ctx.getImageData(0, 0, w, h).data;
+  const dark = y => { let cnt = 0; for (let x = 0; x < w; x += 3) { const i = (y * w + x) * 4; if (data[i] + data[i + 1] + data[i + 2] < 560) cnt++; } return cnt > 1; };
+  let y = h - 1; while (y > minH && !dark(y)) y--;
+  let t = 0; while (t < y - minH && !dark(t)) t++;
+  const nh = Math.min(h, y + 12) - Math.max(0, t - 8);
+  if (nh >= h - 4) return canvas;
+  const o = document.createElement("canvas"); o.width = w; o.height = Math.max(minH, nh);
+  o.getContext("2d").drawImage(canvas, 0, -Math.max(0, t - 8));
+  return o;
+}
+const toJpeg = (c, q = 0.82) => new Promise(r => c.toBlob(r, "image/jpeg", q));
+async function stitch(blobs) {
+  if (blobs.length === 1) return blobs[0];
+  const ims = await Promise.all(blobs.map(b => createImageBitmap(b)));
+  const w = Math.max(...ims.map(i => i.width)), h = ims.reduce((s, i) => s + i.height, 0);
+  const c = document.createElement("canvas"); c.width = w; c.height = h; const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h);
+  let y = 0; for (const i of ims) { ctx.drawImage(i, 0, y); y += i.height; }
+  return toJpeg(c);
+}
+
+/* =====================================================================
+   Router & views
+   ===================================================================== */
+function go(view, opts = {}) { Object.assign(UI, opts); UI.view = view; render(); window.scrollTo(0, 0); }
+function render() {
+  $$(".tab").forEach(t => t.setAttribute("aria-current", t.dataset.v === UI.view || (UI.view === "import" && t.dataset.v === "home") || (["report", "review"].includes(UI.view) && t.dataset.v === (UI.reportFrom === "history" ? "history" : "home")) ? "true" : "false"));
+  const v = $("#view");
+  const fn = { todos: vTodos, history: vHistory, home: vHome, import: vImport, report: vReport, review: vReview, book: vBook, notes: vNotes, stats: vStats }[UI.view] || vHome;
+  v.innerHTML = fn();
+  hydrate(v);
+  afterRender[UI.view]?.();
+  updateBadge(); drawMemo();
+}
+const afterRender = {};
+
+/* ---------- Home ---------- */
+function paperStats(pid) {
+  const atts = D.attempts.filter(a => a.pid === pid && a.mode === "paper");
+  return { done: atts.filter(a => a.finishedAt), draft: atts.find(a => !a.finishedAt) };
+}
+function vHome() {
+  const wrong = [...D.qstate.values()].filter(s => s.inBook).length;
+  const lastAtt = D.attempts.find(a => a.finishedAt);
+  const cards = D.papers.map(p => {
+    const st = paperStats(p.id); const last = st.done[0];
+    return `<article class="card pad paper">
+      <div class="row"><h3 class="grow">${esc(p.title)}</h3></div>
+      <div class="row small muted"><span>${p.qCount} 题</span>${(p.modules || []).length ? `<span>· ${p.modules.map(m => esc(m.name)).join(" / ")}</span>` : ""}</div>
+      <div class="row small">${last ? `<span class="chip ${last.summary.acc >= 70 ? "good" : last.summary.acc >= 50 ? "acc" : "bad"}">上次正确率 ${last.summary.acc}%</span><span class="faint">${fmtDate(last.finishedAt)}</span>` : `<span class="faint">还没做过</span>`}${p.answered < p.qCount ? `<span class="chip mark">${p.qCount - p.answered} 题缺答案</span>` : ""}</div>
+      <div class="row">
+        ${st.draft ? `<button class="btn primary" data-act="resume" data-id="${st.draft.id}">继续做题</button>` : `<button class="btn primary" data-act="start" data-id="${p.id}">开始做题</button>`}
+        ${last ? `<button class="btn" data-act="report" data-id="${last.id}">报告</button>` : ""}
+        <button class="btn" data-act="paperReview" data-id="${p.id}">看题与解析</button>
+        <button class="btn ghost danger sm" data-act="delPaper" data-id="${p.id}">删除</button>
+      </div>
+    </article>`;
+  }).join("");
+  return `
+  <section class="card pad">
+    <div class="kpi">
+      <div><b>${D.papers.length}</b><span>套试卷</span></div>
+      <div><b>${wrong}</b><span>道错题在册</span></div>
+      <div><b>${D.attempts.filter(a => a.finishedAt).length}</b><span>次练习</span></div>
+      <div><b>${lastAtt ? lastAtt.summary.acc + "%" : "—"}</b><span>最近一次正确率</span></div>
+    </div>
+  </section>
+  <h2 class="section-title">我的试卷</h2>
+  <div class="papers">
+    <button class="card pad import-card" data-act="nav" data-v="import">
+      <b style="font-size:16px">＋ 导入一套试卷</b>
+      <span class="small muted">选择卷子 PDF 和答案解析 PDF，自动拆成一题一页。扫描版会先自动识别文字；个别没认出的题，在页面上点一下题目开头即可补上。</span>
+    </button>
+    ${cards}
+  </div>
+  ${`<h2 class="section-title">数据与备份</h2><div class="card pad row"><span class="grow small muted">${S.cloud ? "试卷、做题记录和笔记已保存到你的 Claude 账号，iPad、电脑上打开这个页面看到的是同一份数据。也可以另存一份备份文件。" : "数据只保存在这台设备的浏览器里，换设备或清除浏览器数据前请先导出备份。iPad / iPhone 建议用 Safari 打开后「分享 → 添加到主屏幕」，当作 App 使用，数据更不容易被系统清理。"}</span><button class="btn" data-act="backup">导出备份</button><label class="btn">导入备份<input type="file" accept=".json" id="restoreIn" hidden></label></div>`}
+  ${!window.claude ? aiSettingsCard() : ""}`;
+}
+afterRender.home = () => {
+  const r = $("#restoreIn"); if (r) r.onchange = () => restoreBackup(r.files[0]);
+  const pv = $("#aiProv"); if (pv) pv.onchange = () => { const p = AI_PRESETS[pv.value]; if (pv.value !== "custom") { $("#aiBase").value = p.base; $("#aiModel").value = p.model; } };
+};
+
+/* ---------- Import ---------- */
+const IMP = { step: 1, paperFile: null, ansFile: null, title: "", pdf: null, pages: null, st: null, ans: {}, ana: {}, tool: "q", busy: "", prog: 0, previews: [] };
+function resetImport() { Object.assign(IMP, { step: 1, paperFile: null, ansFile: null, title: "", pdf: null, pages: null, st: null, ans: {}, ana: {}, tool: "q", busy: "", prog: 0, previews: [] }); }
+function vImport() {
+  if (IMP.step === 1) return `
+  <div class="row"><button class="btn ghost" data-act="nav" data-v="home">← 返回</button><h2 class="grow" style="font-family:var(--f-display)">导入试卷</h2></div>
+  <div class="steps" style="margin-top:16px">
+    <div class="card pad drop"><b>1 · 卷子 PDF</b><span class="small muted">文字版会自动识别题号、模块和材料；扫描版需要在下一步手动点题目开头。</span><input type="file" accept="application/pdf" id="fPaper"><span class="small faint" id="fPaperName">${IMP.paperFile ? esc(IMP.paperFile.name) : ""}</span></div>
+    <div class="card pad drop"><b>2 · 答案与解析 PDF（可选）</b><span class="small muted">支持“1-5 ACBBA”答案表和“1.【答案】A。解析：…”逐题解析。没有的话可以下一步手动填答案串。</span><input type="file" accept="application/pdf" id="fAns"><span class="small faint" id="fAnsName">${IMP.ansFile ? esc(IMP.ansFile.name) : ""}</span></div>
+    <div class="card pad drop"><b>3 · 试卷名称</b><input type="text" id="fTitle" placeholder="例如：2025 北京定向选调" value="${esc(IMP.title)}"></div>
+  </div>
+  <div class="row" style="margin-top:16px"><button class="btn primary" data-act="impAnalyze" ${IMP.busy ? "disabled" : ""}>识别试卷</button><span class="small muted" id="impMsg">${esc(IMP.busy)}</span></div>
+  ${IMP.busy ? `<div class="progress" style="margin-top:10px"><i style="width:${IMP.prog}%"></i></div>` : ""}`;
+  // step 2: review
+  const st = IMP.st, R = buildRegions(IMP.pages, st);
+  const mis = R.qs.find(q => q.marker.num && q.marker.num !== q.n);
+  const withAns = R.qs.filter(q => IMP.ans[q.n]).length;
+  const ansStr = R.qs.map(q => IMP.ans[q.n] || "_").join("");
+  const mods = st.modules.map((m, i) => `<div class="modrow"><select data-act="modName" data-i="${i}">${[...new Set([...MODULES, m.name])].map(x => `<option ${x === m.name ? "selected" : ""}>${esc(x)}</option>`).join("")}</select><input type="number" min="1" value="${m.from}" data-act="modFrom" data-i="${i}" aria-label="起始题号"><button class="btn ghost sm" data-act="modDel" data-i="${i}" aria-label="删除模块">×</button></div>`).join("");
+  return `
+  <div class="row"><button class="btn ghost" data-act="impBack">← 重新选择文件</button><h2 class="grow" style="font-family:var(--f-display)">${esc(IMP.title)}</h2></div>
+  <div class="review" style="margin-top:14px">
+    <aside class="side">
+      <div class="card pad">
+        <div class="kpi"><div><b>${R.qs.length}</b><span>道题</span></div><div><b>${Object.keys(R.mats).length}</b><span>段材料</span></div><div><b>${withAns}</b><span>题有答案</span></div></div>
+        ${R.qs.length < 5 ? `<p class="warn" style="margin-top:12px">${!st.hasText ? "这份 PDF 没能读出文字。" : "读出了文字，但没找到题号，可能是文字层乱码。"}可以用文字识别重新读一遍（每页几秒），或者在右边页面上手动点每道题的开头。</p><button class="btn primary" style="margin-top:8px;width:100%" data-act="impOcr" ${IMP.busy ? "disabled" : ""}>用文字识别重新读取</button>` : ""}
+        ${mis ? `<p class="warn" style="margin-top:12px">卷面上的第 ${mis.marker.num} 题被排成了第 ${mis.n} 题。${mis.marker.num > mis.n ? `前面漏了 ${mis.marker.num - mis.n} 个题目开头（会和上一题粘在一起），请往前找到后用“题目开头”补点。` : `前面多出了 ${mis.n - mis.marker.num} 个题目开头，点它的标签删除。`}</p>` : ""}
+      </div>
+      <div class="card pad">
+        <b class="small">标注工具</b><p class="small muted" style="margin:4px 0 8px">在页面上点击添加，点标签删除。</p>
+        <div class="tools">
+          <button class="tool" data-act="tool" data-t="q" aria-pressed="${IMP.tool === "q"}">题目开头</button>
+          <button class="tool" data-act="tool" data-t="mat" aria-pressed="${IMP.tool === "mat"}">材料开头</button>
+          <button class="tool" data-act="tool" data-t="cut" aria-pressed="${IMP.tool === "cut"}">截断（之后不要）</button>
+        </div>
+        <div class="row small" style="margin-top:10px"><label>首题题号 <input type="number" min="1" id="firstNum" value="${st.firstNum}" style="width:70px"></label></div>
+        <div class="row small" style="margin-top:6px"><label class="grow">页眉 <input type="range" min="0" max="20" step="0.5" id="headR" value="${(st.head * 100).toFixed(1)}" style="width:100%"></label><label class="grow">页脚 <input type="range" min="80" max="100" step="0.5" id="footR" value="${(st.foot * 100).toFixed(1)}" style="width:100%"></label></div>
+      </div>
+      <div class="card pad">
+        <div class="row"><b class="small grow">模块划分</b><button class="btn sm" data-act="modAdd">＋ 模块</button></div>
+        <p class="small muted" style="margin:4px 0 8px">从第几题开始属于哪个模块。整套真题可以直接选卷型；粉笔导出的错题没有模块标题，需要手动补。</p>
+        <select id="tplSel" style="width:100%;margin-bottom:8px"><option value="">卷型：按卷面标题自动识别</option>${TEMPLATES.map(t => `<option value="${t.id}" ${st.template === t.id ? "selected" : ""}>${esc(t.name)}</option>`).join("")}</select>
+        ${(() => { const t = TEMPLATES.find(x => x.id === st.template); if (!t) return ""; const tot = t.mods.reduce((a, m) => a + m[1], 0); return tot !== R.qs.length ? `<p class="warn" style="margin-bottom:8px">这个卷型有 ${tot} 题，识别到 ${R.qs.length} 题，请核对模块起始题号。</p>` : ""; })()}
+        <div style="display:flex;flex-direction:column;gap:6px">${mods || '<span class="small faint">还没有模块，全部算作“未分类”。</span>'}</div>
+      </div>
+      <div class="card pad">
+        <b class="small">答案串</b><p class="small muted" style="margin:4px 0 8px">从第 ${st.firstNum} 题起依次填写，未知用 _。解析匹配到 ${Object.keys(IMP.ana).length} 题。</p>
+        <textarea id="ansStr" rows="3" class="num" style="letter-spacing:.12em">${esc(ansStr)}</textarea>
+      </div>
+      <div class="card pad">
+        <button class="btn primary" style="width:100%" data-act="impCommit" ${R.qs.length && !IMP.busy ? "" : "disabled"}>确认导入 ${R.qs.length} 道题</button>
+        ${IMP.busy ? `<p class="small muted" id="impMsg" style="margin:8px 0 4px">${esc(IMP.busy)}</p><div class="progress"><i style="width:${IMP.prog}%"></i></div>` : ""}
+      </div>
+    </aside>
+    <div class="pages" id="pages">${IMP.pages.map((p, i) => `<div class="pg" data-pg="${i}" style="aspect-ratio:${p.w}/${p.h}"><span class="pno">第 ${i + 1} 页</span></div>`).join("")}</div>
+  </div>`;
+}
+afterRender.import = () => {
+  if (IMP.step === 1) {
+    $("#fPaper").onchange = e => { IMP.paperFile = e.target.files[0]; $("#fPaperName").textContent = IMP.paperFile?.name || ""; if (!$("#fTitle").value && IMP.paperFile) { $("#fTitle").value = IMP.paperFile.name.replace(/\.pdf$/i, ""); } };
+    $("#fAns").onchange = e => { IMP.ansFile = e.target.files[0]; $("#fAnsName").textContent = IMP.ansFile?.name || ""; };
+    $("#fTitle").oninput = e => IMP.title = e.target.value;
+    return;
+  }
+  drawImportPages();
+  $("#firstNum").onchange = e => { IMP.st.firstNum = Math.max(1, +e.target.value || 1); if (IMP.st.template) applyTemplate(IMP.st, IMP.st.template); render(); };
+  $("#tplSel").onchange = e => { const sy = window.scrollY; if (e.target.value) applyTemplate(IMP.st, e.target.value); else IMP.st.template = ""; render(); window.scrollTo(0, sy); };
+  $("#headR").onchange = e => { IMP.st.head = +e.target.value / 100; render(); };
+  $("#footR").onchange = e => { IMP.st.foot = +e.target.value / 100; render(); };
+  $("#ansStr").onchange = e => {
+    const s = toHalf(e.target.value.toUpperCase()).replace(/[^A-D_]/g, ""); const R = buildRegions(IMP.pages, IMP.st);
+    R.qs.forEach((q, i) => { const ch = s[i]; if (ch && ch !== "_") IMP.ans[q.n] = ch; else delete IMP.ans[q.n]; });
+    render();
+  };
+};
+async function drawImportPages() {
+  const st = IMP.st, R = buildRegions(IMP.pages, st);
+  const qByMarker = new Map(R.qs.map(q => [q.marker, q.n]));
+  for (const el of $$(".pg", $("#pages"))) {
+    const i = +el.dataset.pg, p = IMP.pages[i];
+    if (!IMP.previews[i]) { const c = await renderPageCanvas(await IMP.pdf.getPage(i + 1), 1.4); IMP.previews[i] = URL.createObjectURL(await toJpeg(c, 0.7)); c.width = c.height = 0; }
+    if (!el.isConnected) return;
+    const img = document.createElement("img"); img.src = IMP.previews[i]; img.alt = `第 ${i + 1} 页`; img.style.cssText = "display:block;width:100%;height:auto";
+    el.prepend(img);
+    const pctY = y => (y / p.h * 100).toFixed(2) + "%";
+    let html = `<div class="band" style="top:0;height:${(st.head * 100).toFixed(2)}%"></div><div class="band" style="top:${(st.foot * 100).toFixed(2)}%;bottom:0"></div>`;
+    st.markers.forEach((m, mi) => {
+      if (m.page !== i) return;
+      const label = m.type === "q" ? `第 ${qByMarker.get(m) ?? "?"} 题` : m.type === "mat" ? `材料${m.range ? ` ${m.range[0]}-${m.range[1]}` : ""}` : "截断";
+      html += `<div class="mk ${m.type}" style="top:${pctY(m.y)}"><b data-act="delMarker" data-mi="${mi}" title="删除">${label}</b></div>`;
+    });
+    el.insertAdjacentHTML("beforeend", html);
+    el.onclick = ev => {
+      if (ev.target.closest("[data-act]")) return;
+      const rect = el.getBoundingClientRect(); const y = (ev.clientY - rect.top) / rect.height * p.h;
+      IMP.st.markers.push({ page: i, y: Math.max(0, y - 4), type: IMP.tool });
+      const sy = window.scrollY; render(); window.scrollTo(0, sy);
+    };
+  }
+}
+async function impAnalyze() {
+  IMP.title = $("#fTitle")?.value.trim() || IMP.title;
+  if (!IMP.paperFile) return toast("先选择卷子 PDF");
+  if (!IMP.title) IMP.title = IMP.paperFile.name.replace(/\.pdf$/i, "");
+  try {
+    IMP.busy = "正在读取卷子…"; IMP.prog = 5; render();
+    IMP.pdf = await openPdf(IMP.paperFile);
+    IMP.pages = [];
+    for (let i = 1; i <= IMP.pdf.numPages; i++) { IMP.pages.push(await pageLines(await IMP.pdf.getPage(i))); IMP.prog = 5 + 60 * i / IMP.pdf.numPages; setImpProgress(); }
+    const step = (msg, f) => { IMP.busy = msg; if (f != null) IMP.prog = 65 + 30 * f; setImpProgress(); };
+    if (IMP.pages.filter(p => p.lines.length > 3).length < IMP.pages.length * 0.4) {
+      try { await ocrPages(IMP.pdf, IMP.pages, { onStep: step }); } catch (e) { console.warn(e); toast("自动识别文字失败，可以在下一步手动点题目开头：" + (e.message || e), 5000); }
+    }
+    IMP.st = detectStructure(IMP.pages);
+    const firstQ = IMP.st.markers.filter(m => m.type === "q").sort(markerSort)[0];
+    IMP.st.firstNum = firstQ ? firstQ.num : 1;
+    IMP.st.template = "";
+    for (const t of TEMPLATES) if (t.mods.length === IMP.st.modules.length && t.mods.every((m, i) => m[0] === IMP.st.modules[i].name)) { IMP.st.template = t.id; IMP.st.modules.forEach((m, i) => { m.pts = t.mods[i][2] ?? null; m.min = t.mods[i][3] ?? null; }); break; }
+    IMP.ans = {}; IMP.ana = {};
+    if (IMP.ansFile) {
+      IMP.busy = "正在读取答案…"; setImpProgress();
+      const apdf = await openPdf(IMP.ansFile); const { txt } = await pdfFullText(apdf, step); const r = parseAnswers(txt); IMP.ans = r.ans; IMP.ana = r.ana;
+    }
+    IMP.busy = ""; IMP.step = 2; IMP.previews = []; render();
+  } catch (e) { console.error(e); IMP.busy = ""; render(); toast("读取失败：" + e.message); }
+}
+function setImpProgress() { const bar = $(".progress i"); if (bar) bar.style.width = IMP.prog + "%"; const m = $("#impMsg"); if (m) m.textContent = IMP.busy; }
+async function impCommit() {
+  const st = IMP.st, R = buildRegions(IMP.pages, st);
+  const pid = uid("p");
+  IMP.busy = "正在切题并保存图片…"; IMP.prog = 0; render();
+  try {
+    // collect jobs per page
+    const jobs = new Map(); // page -> [{key, idx, slice}]
+    const pieces = {}; // key -> [blob per slice]
+    const addJob = (key, slices) => { pieces[key] = new Array(slices.length); slices.forEach((s, idx) => { if (!jobs.has(s.page)) jobs.set(s.page, []); jobs.get(s.page).push({ key, idx, s }); }); };
+    R.qs.forEach(q => addJob("q" + q.n, q.slices));
+    Object.entries(R.mats).forEach(([k, m]) => addJob(k, m.slices));
+    const SCALE = 2; let done = 0; const total = jobs.size;
+    for (const [pg, list] of [...jobs.entries()].sort((a, b) => a[0] - b[0])) {
+      const page = await IMP.pdf.getPage(pg + 1); const full = await renderPageCanvas(page, SCALE);
+      for (const j of list) {
+        const c = document.createElement("canvas"); const top = Math.floor(j.s.top * SCALE), h = Math.max(4, Math.ceil((j.s.bot - j.s.top) * SCALE));
+        c.width = full.width; c.height = h; c.getContext("2d").drawImage(full, 0, -top);
+        pieces[j.key][j.idx] = await toJpeg(trimBottom(c));
+      }
+      full.width = full.height = 0; done++; IMP.prog = Math.round(done / total * 55); setImpProgress();
+    }
+    const refs = {}; const keys = Object.keys(pieces); let up = 0;
+    IMP.busy = S.assets ? "正在上传图片…" : "正在保存图片…";
+    for (const k of keys) { const parts = pieces[k].filter(Boolean); refs[k] = parts.length ? await putImage(await stitch(parts)) : null; up++; IMP.prog = 55 + Math.round(up / keys.length * 35); setImpProgress(); }
+    IMP.busy = "正在写入题目…"; setImpProgress();
+    const modules = [...st.modules].sort((a, b) => a.from - b.from).map(m => ({ name: m.name, from: m.from, pts: m.pts ?? null, min: m.min ?? null }));
+    let answered = 0;
+    for (const q of R.qs) {
+      const id = pid + "-" + pad3(q.n); const answer = IMP.ans[q.n] || ""; if (answer) answered++;
+      const doc = { pid, n: q.n, module: q.mod, img: refs["q" + q.n], mat: q.mat ? refs[q.mat] : null, matKey: q.mat ? pid + q.mat : null, answer, analysis: (IMP.ana[q.n] || "").slice(0, 20000), text: regionText(IMP.pages, q.slices), createdAt: Date.now() };
+      await dbPut("questions", id, doc); D.questions.set(id, { id, ...doc });
+    }
+    const paper = { title: IMP.title, createdAt: Date.now(), qCount: R.qs.length, modules, answered, first: R.qs[0]?.n || 1, template: st.template || "" };
+    await dbPut("papers", pid, paper); D.papers.unshift({ id: pid, ...paper });
+    IMP.prog = 100; toast(`已导入 ${R.qs.length} 道题`);
+    resetImport(); go("home");
+  } catch (e) { console.error(e); IMP.busy = ""; render(); toast("导入失败：" + e.message, 5000); }
+}
+
+/* =====================================================================
+   Practice
+   ===================================================================== */
+let P = null; // live attempt
+const INK = new Map(); // qid -> strokes (session only)
+function paperQids(pid) { return [...D.questions.values()].filter(q => q.pid === pid).sort((a, b) => a.n - b.n).map(q => q.id); }
+async function startAttempt({ pid = null, qids, title, mode }) {
+  const a = { id: uid("a"), pid, qids, title, mode, startedAt: Date.now(), answers: {}, cur: 0, elapsed: 0 };
+  D.attempts.unshift(a); await dbPut("attempts", a.id, a); openPractice(a);
+}
+function openPractice(a) {
+  P = { a, enter: Date.now(), tick: null, ink: false, inkTool: "pen", saveT: null };
+  $("#topbar").hidden = true; document.body.style.overflow = "hidden";
+  renderPractice();
+  P.tick = setInterval(() => { const el = $("#pTimer"); if (el) el.textContent = fmtT(curElapsed()); }, 1000);
+}
+function curElapsed() { return P.a.elapsed + (Date.now() - P.enter) / 1000; }
+function commitTime() {
+  const now = Date.now(), dt = (now - P.enter) / 1000; P.enter = now;
+  const qid = P.a.qids[P.a.cur]; const r = P.a.answers[qid] ||= {}; r.t = (r.t || 0) + dt; P.a.elapsed += dt;
+}
+function queueSave() { clearTimeout(P.saveT); const a = P.a; P.saveT = setTimeout(() => dbPut("attempts", a.id, a).catch(console.warn), 1500); }
+function renderPractice() {
+  const a = P.a, qid = a.qids[a.cur], q = D.questions.get(qid) || {}, r = a.answers[qid] || {};
+  const hasMat = !!q.mat;
+  const ov = $("#overlay");
+  ov.innerHTML = `<div class="prac" role="dialog" aria-label="做题">
+    <div class="prac-top">
+      <button class="ico" data-act="pExit" aria-label="退出（进度会保存）">${ICON.close}</button>
+      <span class="timer" id="pTimer">${ICON.clock}${fmtT(curElapsed())}</span>
+      <div class="title">${esc(a.title)} <span class="num faint">${a.cur + 1}/${a.qids.length}</span></div>
+      <button class="ico ${r.f ? "marked" : ""}" data-act="pFlag" aria-label="标记该题" aria-pressed="${!!r.f}">${r.f ? ICON.starf : ICON.star}</button>
+      <button class="ico" data-act="pInk" aria-label="画板模式" aria-pressed="${P.ink}">${ICON.pen}</button>
+      <button class="ico" data-act="memoToggle" aria-label="随手记" aria-pressed="${MEMO.open}">${ICON.memo}</button>
+      <button class="ico" data-act="pCard" aria-label="答题卡">${ICON.card}</button>
+      <button class="btn primary sm" data-act="pSubmit">交卷</button>
+    </div>
+    <div class="prac-body ${hasMat ? "has-mat" : ""}">
+      ${hasMat ? `<div class="matpane"><div class="lbl"><span>材料</span><span>${esc(q.module || "")}</span></div><img class="qimg" data-ref="${esc(q.mat)}" alt="材料"></div>` : ""}
+      <div class="qpane" id="qpane">
+        <div class="qsheet" id="qsheet">
+          <div class="qmeta"><span class="chip acc">${esc(q.module || "未分类")}</span><span class="small faint">${esc(qLabel(q))}</span></div>
+          ${q.img ? `<img class="qimg" data-ref="${esc(q.img)}" alt="第${q.n}题">` : `<div class="empty">这道题没有图片</div>`}
+          <div class="opts" role="group" aria-label="选择答案">${["A", "B", "C", "D"].map(L => `<button class="opt" data-act="pPick" data-l="${L}" aria-pressed="${r.c === L}">${L}</button>`).join("")}</div>
+          ${P.ink ? `<div class="scratch small faint" aria-hidden="true">草稿区</div>` : ""}
+          <canvas class="ink ${P.ink ? "on" : ""}" id="inkCv"></canvas>
+        </div>
+        ${P.ink ? `<div class="inkbar" role="toolbar" aria-label="画板工具">
+          <button class="ico" data-act="inkTool" data-t="pen" aria-pressed="${P.inkTool === "pen"}" aria-label="笔">${ICON.pen}</button>
+          <button class="ico" data-act="inkTool" data-t="eraser" aria-pressed="${P.inkTool === "eraser"}" aria-label="橡皮">${ICON.eraser}</button>
+          <button class="ico" data-act="inkUndo" aria-label="撤销">${ICON.undo}</button>
+          <button class="ico" data-act="inkClear" aria-label="清空">${ICON.trash}</button>
+        </div>` : ""}
+      </div>
+    </div>
+    <div class="prac-foot"><button class="btn" data-act="pPrev" ${a.cur === 0 ? "disabled" : ""}>上一题</button><button class="btn ${a.cur === a.qids.length - 1 ? "primary" : ""}" data-act="${a.cur === a.qids.length - 1 ? "pSubmit" : "pNext"}">${a.cur === a.qids.length - 1 ? "交卷" : "下一题"}</button></div>
+  </div>`;
+  $$("#qsheet img", ov).forEach(im => im.addEventListener("load", setupInk));
+  hydrate(ov);
+  setupInk(); drawMemo();
+}
+function setupInk() {
+  const cv = $("#inkCv"), sheet = $("#qsheet"); if (!cv || !sheet) return;
+  const qid = P.a.qids[P.a.cur]; const strokes = INK.get(qid) || []; INK.set(qid, strokes);
+  const dpr = window.devicePixelRatio || 1; const w = sheet.clientWidth, h = sheet.scrollHeight;
+  cv.style.width = w + "px"; cv.style.height = h + "px"; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  const ctx = cv.getContext("2d"); ctx.scale(dpr, dpr);
+  const inkColor = getComputedStyle(document.documentElement).getPropertyValue("--bad").trim() || "#c43d2b";
+  const redraw = () => {
+    ctx.clearRect(0, 0, w, h);
+    for (const s of strokes) { if (s.pts.length < 1) continue; ctx.globalCompositeOperation = s.er ? "destination-out" : "source-over"; ctx.strokeStyle = inkColor; ctx.lineWidth = s.er ? 22 : 2.2; ctx.lineCap = ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(s.pts[0][0], s.pts[0][1]); for (const p of s.pts) ctx.lineTo(p[0], p[1]); ctx.stroke(); }
+    ctx.globalCompositeOperation = "source-over";
+  };
+  redraw(); P.redrawInk = redraw;
+  if (!P.ink) return;
+  const pane = $("#qpane"); let cur = null, penSeen = P.penSeen || false, lastY = 0;
+  const pos = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  cv.onpointerdown = e => {
+    if (e.pointerType === "pen") P.penSeen = penSeen = true;
+    if (e.pointerType === "touch" && penSeen) { lastY = e.clientY; cv.setPointerCapture(e.pointerId); cur = { scroll: true }; return; }
+    cv.setPointerCapture(e.pointerId); cur = { er: P.inkTool === "eraser", pts: [pos(e)] }; strokes.push(cur); e.preventDefault();
+  };
+  cv.onpointermove = e => {
+    if (!cur) return;
+    if (cur.scroll) { pane.scrollTop -= e.clientY - lastY; lastY = e.clientY; return; }
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e]; for (const ev of evs) cur.pts.push(pos(ev)); redraw();
+  };
+  cv.onpointerup = cv.onpointercancel = () => { cur = null; };
+}
+function practiceGo(i) { commitTime(); P.a.cur = Math.max(0, Math.min(P.a.qids.length - 1, i)); queueSave(); renderPractice(); $("#qpane")?.scrollTo(0, 0); }
+function closePractice() { clearInterval(P.tick); clearTimeout(P.saveT); $("#overlay").innerHTML = ""; $("#topbar").hidden = false; document.body.style.overflow = ""; drawMemo(); }
+function answerCard(a, { review = false } = {}) {
+  const groups = new Map();
+  a.qids.forEach((qid, i) => { const q = D.questions.get(qid) || {}; const k = q.module || "未分类"; if (!groups.has(k)) groups.set(k, []); groups.get(k).push([qid, i, q]); });
+  return [...groups.entries()].map(([m, list]) => `<div class="small muted" style="margin-top:6px">${esc(m)}</div><div class="grid-q">${list.map(([qid, i, q]) => {
+    const r = a.answers[qid] || {}; let cls = "";
+    if (review) cls = r.res === "ok" ? "good" : r.res === "no" ? "bad" : r.c ? "unk" : ""; else cls = r.c ? "done" : "";
+    if (!review && i === a.cur) cls += " cur"; if (r.f) cls += " flag";
+    return `<button class="qdot ${cls}" data-act="${review ? "rvJump" : "pJump"}" data-i="${i}" aria-label="第${i + 1}题">${a.mode === "paper" ? q.n : i + 1}</button>`;
+  }).join("")}</div>`).join("");
+}
+function showSheet(html) { const d = document.createElement("div"); d.className = "sheet-bg"; d.id = "sheetBg"; d.innerHTML = `<div class="sheet">${html}</div>`; d.onclick = e => { if (e.target === d) { d.remove(); if ($("#kpSheet", d)) render(); } }; document.body.appendChild(d); hydrate(d); }
+const closeSheet = () => $("#sheetBg")?.remove();
+async function submitAttempt() {
+  if (P.submitting) return; P.submitting = true;
+  try { await doSubmit(); } catch (e) { console.error(e); P.submitting = false; toast("交卷出错：" + (e.message || e.code || e), 6000); }
+}
+async function doSubmit() {
+  commitTime(); closeSheet(); toast("正在交卷…", 20000);
+  const a = P.a; a.finishedAt = Date.now();
+  const byMod = {}; let ok = 0, no = 0, blank = 0, unk = 0;
+  for (const qid of a.qids) {
+    const q = D.questions.get(qid) || {}; const r = a.answers[qid] ||= {};
+    r.res = !r.c ? "blank" : !q.answer ? "unk" : r.c === q.answer ? "ok" : "no";
+    const m = byMod[q.module || "未分类"] ||= { n: 0, ok: 0, t: 0 }; m.n++; m.t += r.t || 0; if (r.res === "ok") m.ok++;
+    if (r.res === "ok") ok++; else if (r.res === "no") no++; else if (r.res === "blank") blank++; else unk++;
+  }
+  const graded = a.qids.length - unk;
+  let score = 0, maxScore = 0, scored = true;
+  for (const qid of a.qids) { const q = D.questions.get(qid) || {}; const m = modOf(q); if (!m || m.pts == null) { scored = false; break; } maxScore += m.pts; if (a.answers[qid].res === "ok") score += m.pts; }
+  if (a.mode === "paper") { const p = paperOf(a.pid); (p?.modules || []).forEach(m => { if (m.min && byMod[m.name]) byMod[m.name].sug = (byMod[m.name].sug || 0) + m.min * 60; }); }
+  a.summary = { ok, no, blank, unk, n: a.qids.length, acc: pct(ok, graded), time: a.elapsed, byMod, score: scored ? Math.round(score * 10) / 10 : null, maxScore: scored ? Math.round(maxScore * 10) / 10 : null };
+  try { await dbPut("attempts", a.id, a); } catch (e) { console.warn(e); queueWrite("attempts", a.id, a); }
+  // wrong book bookkeeping
+  for (const qid of a.qids) {
+    const r = a.answers[qid]; const s = qs(qid); if (r.res === "unk") continue;
+    const wrong = r.res === "no" || (r.res === "blank" && a.mode === "paper");
+    const patch = { tries: (s.tries || 0) + 1, lastRes: r.res, lastAt: a.finishedAt };
+    if (wrong) Object.assign(patch, { wrongCount: (s.wrongCount || 0) + 1, inBook: true, bookAt: s.inBook ? s.bookAt : a.finishedAt });
+    if (r.f) patch.flag = true;
+    const cur = { ...s, ...patch, id: qid }; D.qstate.set(qid, cur); queueWrite("qstate", qid, cur);
+  }
+  if (a.mode === "redo") { const meta = { lastTidy: Date.now() }; D.meta.book = meta; queueWrite("meta", "book", meta); }
+  closePractice(); UI.reportId = a.id; UI.reportFrom = "home"; go("report"); toast("已交卷", 1500);
+}
+
+/* =====================================================================
+   Report
+   ===================================================================== */
+function moduleBars(byMod) {
+  const rows = Object.entries(byMod).sort((a, b) => modOrder(a[0]) - modOrder(b[0]));
+  const maxT = Math.max(1, ...rows.map(([, m]) => Math.max(m.t, m.sug || 0)));
+  return `<div class="mod-head"><span>模块</span><span>正确率</span><span>用时</span></div><div class="mods">${rows.map(([name, m]) => {
+    const acc = pct(m.ok, m.n);
+    return `<div class="mod"><div class="nm">${esc(name)}<small>共 ${m.n} 道 · 答对 ${m.ok} 道</small></div>
+      <div class="meter" data-tip="${esc(name)}：正确率 ${acc}%（${m.ok}/${m.n}）"><div class="track"><div class="fill" style="width:${acc}%;--c:${acc >= 70 ? "var(--good)" : acc >= 50 ? "var(--accent)" : "var(--bad)"}"></div></div><span class="v">${acc}%</span></div>
+      <div class="meter" data-tip="${esc(name)}：共 ${fmtDur(m.t)}，平均每题 ${fmtDur(m.t / m.n)}${m.sug ? `；建议 ${fmtDur(m.sug)}` : ""}"><div class="track"><div class="fill" style="width:${(m.t / maxT * 100).toFixed(1)}%;--c:${m.sug && m.t > m.sug * 1.1 ? "var(--mark)" : "var(--ink3)"}"></div>${m.sug ? `<i class="sug" style="left:${(m.sug / maxT * 100).toFixed(1)}%"></i>` : ""}</div><span class="v">${fmtT(m.t)}${m.sug ? `<br><span class="faint">建议 ${fmtT(m.sug)}</span>` : ""}</span></div></div>`;
+  }).join("")}</div>`;
+}
+function vReport() {
+  const a = D.attempts.find(x => x.id === UI.reportId); if (!a || !a.summary) return `<div class="empty">找不到这次练习的报告。</div>`;
+  const s = a.summary, C = 2 * Math.PI * 62;
+  return `
+  <div class="row"><button class="btn ghost" data-act="nav" data-v="${UI.reportFrom || "home"}">← 返回</button><h2 class="grow" style="font-family:var(--f-display)">练习报告</h2></div>
+  <section class="card pad hero" style="margin-top:14px">
+    <div class="ring"><svg viewBox="0 0 150 150" aria-hidden="true"><circle cx="75" cy="75" r="62" fill="none" stroke="var(--sunk)" stroke-width="12"/><circle cx="75" cy="75" r="62" fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${(C * s.acc / 100).toFixed(1)} ${C.toFixed(1)}"/></svg><div><div><b>${s.acc}<small style="font-size:16px">%</small></b><br><span>正确率</span></div></div></div>
+    <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+      <div class="small muted">${esc(a.title)} · ${a.mode === "redo" ? "错题重做" : "整卷练习"} · 交卷 ${fmtDate(a.finishedAt)}</div>
+      <div class="kpi">${s.score != null ? `<div><b style="color:var(--accent)">${s.score}<small style="font-size:14px;color:var(--ink3)">/${s.maxScore}</small></b><span>按分值估分</span></div>` : ""}<div><b>${s.n}</b><span>一共</span></div><div><b style="color:var(--good)">${s.ok}</b><span>答对</span></div><div><b style="color:var(--bad)">${s.no}</b><span>答错</span></div><div><b>${s.blank}</b><span>未答</span></div><div><b>${fmtT(s.time)}</b><span>总用时</span></div></div>
+      ${s.unk ? `<div class="small warn">${s.unk} 道题没有标准答案，未计入正确率。可在解析页补填答案。</div>` : ""}
+    </div>
+  </section>
+  <h2 class="section-title">各模块用时与正确率</h2>
+  <section class="card pad">${moduleBars(s.byMod)}</section>
+  <h2 class="section-title">答题卡</h2>
+  <section class="card pad"><div class="legend"><span style="--c:var(--good)">答对</span><span style="--c:var(--bad)">答错</span><span style="--c:var(--line)">未答</span><span style="--c:var(--mark)">标记</span></div>${answerCard(a, { review: true })}</section>
+  ${reportSummary(a)}
+  <div class="bar-bottom"><div class="in"><button class="btn grow" data-act="rvAll">全部解析</button><button class="btn primary grow" data-act="rvWrong">错题解析</button></div></div>`;
+}
+
+/* =====================================================================
+   Review (解析)
+   ===================================================================== */
+function openReview(list, idx = 0, from = null) { if (!list.length) return toast("没有可看的题目"); go("review", { reviewList: list, reviewIdx: idx, reviewFrom: from }); }
+function vReview() {
+  const items = UI.reviewList, it = items[UI.reviewIdx]; if (!it) return `<div class="empty">没有题目</div>`;
+  const q = D.questions.get(it.qid); if (!q) return `<div class="empty">这道题已被删除</div>`;
+  const s = qs(q.id);
+  if (!("mine" in it)) { const a = D.attempts.find(x => x.finishedAt && x.answers?.[q.id]?.c); it.mine = a?.answers[q.id].c; it.t = a?.answers[q.id].t; }
+  const mine = it.mine, res = !mine ? "未作答" : !q.answer ? "无标准答案" : mine === q.answer ? "答对" : "答错";
+  const tags = s.kp || [];
+  const allTags = [...new Set([...D.qstate.values()].flatMap(x => x.kp || []))];
+  return `
+  <div class="row"><button class="btn ghost" data-act="rvBack">← 返回</button><div class="grow small muted">${UI.reviewIdx + 1} / ${items.length}</div>
+    <button class="btn sm" data-act="memoToggle" aria-pressed="${MEMO.open}">${ICON.memo.replace("<svg", '<svg width="16" height="16"')} 随手记</button>
+    <button class="btn sm" data-act="rvPrev" ${UI.reviewIdx ? "" : "disabled"}>上一题</button><button class="btn sm" data-act="rvNext" ${UI.reviewIdx < items.length - 1 ? "" : "disabled"}>下一题</button></div>
+  <div class="rv" style="margin-top:14px">
+    <section class="card pad" style="min-width:0">
+      <div class="qmeta"><span class="chip acc">${esc(q.module || "未分类")}</span><span class="small faint">${esc(qLabel(q))}</span>${s.wrongCount ? `<span class="chip bad">错 ${s.wrongCount} 次</span>` : ""}${s.inBook ? `<span class="chip">在错题本</span>` : ""}</div>
+      ${q.mat ? `<details ${q.module === "资料分析" || q.module === "言语理解与表达" ? "open" : ""}><summary>材料</summary><img class="qimg" style="margin:8px 0" data-ref="${esc(q.mat)}" alt="材料"></details>` : ""}
+      ${q.img ? `<img class="qimg" data-ref="${esc(q.img)}" alt="第${q.n}题">` : ""}
+      <div class="ansline">
+        <span>你的答案 <b style="color:${res === "答对" ? "var(--good)" : res === "答错" ? "var(--bad)" : "var(--ink2)"}">${esc(mine || "—")}</b></span>
+        <span>正确答案 <b>${esc(q.answer || "—")}</b></span>
+        ${it.t ? `<span>用时 <b>${fmtT(it.t)}</b></span>` : ""}
+        <span class="chip ${res === "答对" ? "good" : res === "答错" ? "bad" : ""}">${res}</span>
+      </div>
+      <div class="row">
+        <button class="btn sm" data-act="rvBook">${s.inBook ? "移出错题本" : "加入错题本"}</button>
+        <button class="btn sm" data-act="rvFlag">${s.flag ? "取消标记" : "标记"}</button>
+        <label class="small muted">改答案 <select data-act="rvSetAns" style="min-height:30px;padding:2px 6px">${["", "A", "B", "C", "D"].map(L => `<option value="${L}" ${L === (q.answer || "") ? "selected" : ""}>${L || "—"}</option>`).join("")}</select></label>
+      </div>
+    </section>
+    <section style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <div class="card pad">
+        <div class="row" style="margin-bottom:8px"><b class="grow">解析</b>${q.analysis ? `<button class="btn sm" data-act="copySel" title="先在解析里选中文字">选中文字 → 笔记</button><button class="btn sm ghost" data-act="copyAll">全部 → 笔记</button>` : ""}</div>
+        ${q.analysis ? `<div class="ana" id="anaBox">${esc(q.analysis)}</div>` : `<p class="small muted">这道题还没有解析。可以把解析贴在这里：</p><textarea id="anaEdit" rows="4" placeholder="粘贴解析…"></textarea><button class="btn sm" style="margin-top:6px" data-act="saveAna">保存解析</button>`}
+      </div>
+      <div class="card pad">
+        <div class="row" style="margin-bottom:8px"><b class="grow">我的笔记</b><span class="small faint" id="noteState">${s.noteAt ? "已保存" : ""}</span></div>
+        <textarea id="noteBox" rows="7" placeholder="错因、思路、要记住的表述…">${esc(s.note || "")}</textarea>
+      </div>
+      <div class="card pad">
+        <div class="row"><b class="grow">知识点</b><button class="btn sm" data-act="kpOpen">选择知识点</button>${S.sample ? `<button class="btn sm" data-act="kpAi" id="kpAiBtn">AI 推荐</button>` : ""}</div>
+        <div class="tags" style="margin-top:8px">${tags.map((t, i) => `<span class="tag" title="${esc(t)}">${esc(kpShort(t))}<button data-act="tagDel" data-i="${i}" aria-label="删除知识点">×</button></span>`).join("") || '<span class="small faint">还没有标知识点</span>'}</div>
+        <div class="row" style="margin-top:8px"><input type="text" id="tagIn" list="tagList" placeholder="或输入自定义标签，回车确认" style="min-height:32px;flex:1;min-width:0"><datalist id="tagList">${allTags.filter(t => !KP.all.has(t)).map(t => `<option value="${esc(t)}">`).join("")}</datalist></div>
+      </div>
+    </section>
+  </div>`;
+}
+afterRender.review = () => {
+  const it = UI.reviewList[UI.reviewIdx]; if (!it) return; const qid = it.qid;
+  const nb = $("#noteBox"); let t;
+  if (nb) nb.oninput = () => { $("#noteState").textContent = "编辑中…"; clearTimeout(t); t = setTimeout(async () => { await setQS(qid, { note: nb.value, noteAt: Date.now() }); const el = $("#noteState"); if (el) el.textContent = "已保存"; }, 700); };
+  const ti = $("#tagIn"); if (ti) ti.onkeydown = async e => { if (e.key === "Enter" && ti.value.trim()) { const kp = [...new Set([...(qs(qid).kp || []), ti.value.trim()])]; await setQS(qid, { kp }); render(); setTimeout(() => $("#tagIn")?.focus(), 0); } };
+  const cs = $('[data-act="copySel"]'); if (cs) cs.addEventListener("pointerdown", e => e.preventDefault());
+};
+function appendNote(text) {
+  const nb = $("#noteBox"); if (!nb || !text.trim()) return toast("先在解析里选中要复制的文字");
+  nb.value = (nb.value ? nb.value.replace(/\s*$/, "") + "\n" : "") + text.trim(); nb.dispatchEvent(new Event("input")); toast("已加入笔记");
+}
+
+/* ---------- knowledge-point picker & AI tagging ---------- */
+const KPUI = { qid: null, all: false, q: "", open: new Set() };
+function kpOpen(qid) { KPUI.qid = qid; KPUI.q = ""; KPUI.all = false; KPUI.open = new Set(); showSheet(`<div id="kpSheet"></div>`); drawKp(); }
+function drawKp() {
+  const box = $("#kpSheet"); if (!box) return; const q = D.questions.get(KPUI.qid); const sel = new Set(qs(KPUI.qid).kp || []);
+  const roots = KPUI.all ? KP.root.children : rootsFor(q.module);
+  const btn = n => `<button class="add ${sel.has(n.path) ? "on" : ""}" data-act="kpToggle" data-p="${esc(n.path)}">${esc(n.name)}</button>`;
+  let list = "";
+  if (KPUI.q.trim()) {
+    const hits = kpUnder(roots).filter(pth => pth.split("/").pop().includes(KPUI.q.trim()) || pth.includes(KPUI.q.trim())).slice(0, 80);
+    list = hits.map(pth => `<div class="kpn">${btn(KP.all.get(pth))}<span class="small faint">${esc(pth.split("/").slice(0, -1).join(" › "))}</span></div>`).join("") || `<p class="small muted">没有匹配的知识点</p>`;
+  } else {
+    const walk = (n, d) => { const open = d === 0 || KPUI.open.has(n.path); return `<div class="kpn" style="padding-left:${d * 18}px">${n.children.length ? `<button class="tw" data-act="kpTw" data-p="${esc(n.path)}" aria-label="展开">${open ? "▾" : "▸"}</button>` : `<span class="tw"></span>`}${btn(n)}</div>${open ? n.children.map(c => walk(c, d + 1)).join("") : ""}`; };
+    list = roots.map(r => walk(r, 0)).join("");
+  }
+  const st = box.querySelector(".kptree")?.scrollTop || 0;
+  box.innerHTML = `<div class="row"><h3 class="grow" style="font-family:var(--f-display)">选择知识点</h3><button class="btn primary sm" data-act="kpDone">完成</button></div>
+    <p class="small muted" style="margin:4px 0 8px">点一下选中或取消，任何一层都可以选。${q.module && MOD_ROOTS[q.module] ? `当前只显示“${esc(q.module)}”相关的部分。` : ""}</p>
+    <div class="row"><input type="text" id="kpSearch" placeholder="搜索知识点，如：增长率、宪法" value="${esc(KPUI.q)}" style="flex:1;min-width:0">${MOD_ROOTS[q.module] ? `<label class="small row"><input type="checkbox" id="kpAll" ${KPUI.all ? "checked" : ""}> 显示全部模块</label>` : ""}</div>
+    <div class="kptree">${list}</div>`;
+  box.querySelector(".kptree").scrollTop = st;
+  const si = $("#kpSearch"); si.oninput = () => { KPUI.q = si.value; const pos = si.selectionStart; drawKp(); const n = $("#kpSearch"); n.focus(); n.setSelectionRange(pos, pos); };
+  const ka = $("#kpAll"); if (ka) ka.onchange = () => { KPUI.all = ka.checked; drawKp(); };
+}
+async function kpToggle(path) { const cur = qs(KPUI.qid).kp || []; const kp = cur.includes(path) ? cur.filter(x => x !== path) : [...cur, path]; await setQS(KPUI.qid, { kp }); drawKp(); }
+async function aiTag(qid) {
+  if (!S.sample) throw { code: "unavailable" };
+  const q = D.questions.get(qid); const cands = kpUnder(rootsFor(q.module));
+  const prompt = `你在帮一名备考公务员行测的考生给错题归类知识点。
+从下面的“候选知识点”中，为这道题选出 1 到 2 个最具体、最贴切的知识点。必须原样复制候选列表里的完整路径（用 / 分隔），不要自己编。
+只输出 JSON，格式：{"kp": ["完整路径"]}
+
+模块：${q.module || "未知"}
+题目（OCR 识别文字，可能有错字）：
+${(q.text || "").slice(0, 1500)}
+
+参考答案：${q.answer || "未知"}
+解析：
+${(q.analysis || "无").slice(0, 1800)}
+
+候选知识点：
+${cands.join("\n")}`;
+  const res = await S.sample.json(prompt, { modelTier: "quick" });
+  const picked = (res && Array.isArray(res.kp) ? res.kp : []).map(x => String(x).trim()).filter(x => KP.all.has(x)).slice(0, 2);
+  if (!picked.length) return [];
+  const kp = [...new Set([...(qs(qid).kp || []), ...picked])]; await setQS(qid, { kp }); return picked;
+}
+const aiErr = e => ({ not_granted: "没有获得使用 AI 的许可", rate_limited: "请求太频繁，稍后再试", cancelled: "已取消" }[e?.code] || "AI 归类失败：" + (e?.message || e?.code || "未知错误"));
+async function aiBatch(items) {
+  const todo = items.filter(x => !(x.s.kp || []).some(k => KP.all.has(k))).slice(0, 20);
+  if (!todo.length) return toast("选中的题都已经有知识点了");
+  let done = 0;
+  for (const x of todo) {
+    toast(`AI 归类中 ${done + 1}/${todo.length}…`, 60000);
+    try { await aiTag(x.q.id); done++; } catch (e) { toast(aiErr(e), 4000); render(); return; }
+  }
+  toast(`已为 ${done} 道题标好知识点${items.length > todo.length ? "（每次最多 20 道，已有知识点的会跳过）" : ""}`, 4000); render();
+}
+
+/* =====================================================================
+   Wrong book & notes
+   ===================================================================== */
+function bookItems(filterFn) {
+  const out = [];
+  for (const s of D.qstate.values()) { if (!filterFn(s)) continue; const q = D.questions.get(s.id); if (!q) continue; if (UI.bookPaper !== "all" && q.pid !== UI.bookPaper) continue; out.push({ q, s }); }
+  out.sort((a, b) => UI.bookSort === "desc" ? (b.s.bookAt || b.s.noteAt || 0) - (a.s.bookAt || a.s.noteAt || 0) : (a.s.bookAt || a.s.noteAt || 0) - (b.s.bookAt || b.s.noteAt || 0));
+  const groups = new Map(); out.forEach(x => { const k = x.q.module || "未分类"; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(x); });
+  return [...groups.entries()].sort((a, b) => modOrder(a[0]) - modOrder(b[0]));
+}
+function listPanel(groups, sel, openSet, kind) {
+  if (!groups.length) return `<div class="card empty">${kind === "book" ? "错题本是空的。做完一套题后，答错的题会自动收进来。" : "还没有笔记。在解析页写下的笔记会出现在这里。"}</div>`;
+  return `<section class="card pad">${groups.map(([m, list]) => {
+    const allOn = list.every(x => sel.has(x.q.id)); const open = openSet.has(m);
+    return `<div class="grp"><div class="grp-h"><button class="caret" data-act="grpToggle" data-m="${esc(m)}" data-k="${kind}" aria-expanded="${open}" aria-label="展开${esc(m)}">▼</button><span class="nm">${esc(m)}</span><span class="small muted">${list.length} 道</span><input type="checkbox" data-act="grpSel" data-m="${esc(m)}" data-k="${kind}" ${allOn ? "checked" : ""} aria-label="选择${esc(m)}全部"></div>
+      ${open ? list.map(({ q, s }) => `<div class="qrow"><span class="num small faint">${q.n}</span><span class="txt" data-act="openQ" data-id="${q.id}" data-k="${kind}" title="${esc(qLabel(q))}">${esc(kind === "notes" ? (s.note || "").split("\n")[0] : qSnippet(q))}<br><span class="small faint">${esc(qLabel(q))}${s.wrongCount ? ` · 错 ${s.wrongCount} 次` : ""}${(s.kp || []).length ? " · " + esc(s.kp.map(kpShort).join("、")) : ""}</span></span><input type="checkbox" data-act="qSel" data-id="${q.id}" data-k="${kind}" ${sel.has(q.id) ? "checked" : ""} aria-label="选择这道题"></div>`).join("") : ""}</div>`;
+  }).join("")}</section>`;
+}
+function filterBar() {
+  return `<div class="row" style="margin:14px 0"><select id="bookPaper"><option value="all">全部试卷</option>${D.papers.map(p => `<option value="${p.id}" ${UI.bookPaper === p.id ? "selected" : ""}>${esc(p.title)}</option>`).join("")}</select><select id="bookSort"><option value="desc" ${UI.bookSort === "desc" ? "selected" : ""}>新添加在前</option><option value="asc" ${UI.bookSort === "asc" ? "selected" : ""}>新添加在后</option></select></div>`;
+}
+function vBook() {
+  const groups = bookItems(s => s.inBook); const all = groups.flatMap(g => g[1]);
+  const stub = all.filter(x => (x.s.wrongCount || 0) >= 2).length;
+  const meta = D.meta?.book; const days = meta?.lastTidy ? Math.floor((Date.now() - meta.lastTidy) / 864e5) : null;
+  const n = [...UI.bookSel].filter(id => all.some(x => x.q.id === id)).length;
+  return `
+  <section class="card pad"><div class="kpi"><div><b>${all.length}</b><span>总错题</span></div><div><b>${stub}</b><span>顽固错题（错 2 次以上）</span></div><div><b>${days ?? "—"}</b><span>距上次整理（天）</span></div></div></section>
+  ${filterBar()}
+  ${listPanel(groups, UI.bookSel, UI.bookOpen, "book")}
+  <div class="bar-bottom"><div class="in"><label class="row small"><input type="checkbox" data-act="selAll" data-k="book" ${n && n === all.length ? "checked" : ""}> 全选</label><span class="grow small muted">已选 ${n} 道</span>
+    ${S.sample ? `<button class="btn" data-act="bookAi" ${n ? "" : "disabled"} title="为选中且还没有知识点的题自动归类">AI 归类</button>` : ""}<button class="btn" data-act="bookReview" ${n ? "" : "disabled"}>看解析</button><button class="btn" data-act="bookExport" ${n ? "" : "disabled"}>导出 PDF</button><button class="btn primary" data-act="bookRedo" ${n ? "" : "disabled"}>重新做</button></div></div>`;
+}
+function vNotes() {
+  const groups = bookItems(s => (s.note || "").trim()); const all = groups.flatMap(g => g[1]);
+  const n = [...UI.noteSel].filter(id => all.some(x => x.q.id === id)).length;
+  return `
+  <section class="card pad"><div class="kpi"><div><b>${all.length}</b><span>道题有笔记</span></div><div><b>${groups.length}</b><span>个模块</span></div></div></section>
+  ${filterBar()}
+  ${listPanel(groups, UI.noteSel, UI.bookOpen, "notes")}
+  <div class="bar-bottom"><div class="in"><label class="row small"><input type="checkbox" data-act="selAll" data-k="notes" ${n && n === all.length ? "checked" : ""}> 全选</label><span class="grow small muted">已选 ${n} 道</span>
+    <button class="btn" data-act="notesMd" ${n ? "" : "disabled"}>导出 Markdown</button><button class="btn primary" data-act="notesPdf" ${n ? "" : "disabled"}>导出 PDF</button></div></div>`;
+}
+afterRender.book = afterRender.notes = () => {
+  $("#bookPaper").onchange = e => { UI.bookPaper = e.target.value; render(); };
+  $("#bookSort").onchange = e => { UI.bookSort = e.target.value; render(); };
+};
+function selectedInOrder(sel, filterFn) { return bookItems(filterFn).flatMap(g => g[1]).filter(x => sel.has(x.q.id)); }
+
+/* =====================================================================
+   随手记 (quick notes) · per-paper summary · 待办
+   ===================================================================== */
+const MEMO = { open: false, draft: "" };
+function memoCtx() {
+  if (P && $(".prac")) return { qid: P.a.qids[P.a.cur], aid: P.a.id };
+  if (UI.view === "review") { const it = UI.reviewList[UI.reviewIdx]; return it ? { qid: it.qid } : null; }
+  return null;
+}
+const memoDoc = pid => D.memos.get(pid) || { id: pid, entries: [], summary: "" };
+function saveMemoDoc(doc) { D.memos.set(doc.id, doc); queueWrite("memos", doc.id, doc); }
+function memoEntry(e, pid) {
+  return `<div class="memo-e"><div class="row small faint"><span class="grow">第 ${e.n} 题 · ${esc(e.mod || "")} · ${fmtDate(e.at)}</span><button class="memo-del" data-act="memoDel" data-pid="${esc(pid)}" data-id="${esc(e.id)}" aria-label="删除这条">删除</button></div><div class="memo-t">${esc(e.text)}</div></div>`;
+}
+function drawMemo() {
+  const ctx = MEMO.open ? memoCtx() : null; const q = ctx && D.questions.get(ctx.qid);
+  document.body.classList.toggle("memo-open", !!q);
+  let d = $("#memoDrawer");
+  if (!q) { d?.remove(); return; }
+  if (!d) { d = document.createElement("aside"); d.id = "memoDrawer"; d.className = "memo"; d.setAttribute("aria-label", "随手记"); document.body.appendChild(d); }
+  const doc = memoDoc(q.pid), p = paperOf(q.pid);
+  const mine = doc.entries.filter(e => e.qid === q.id).slice().reverse();
+  const others = doc.entries.filter(e => e.qid !== q.id).slice(-30).reverse();
+  d.innerHTML = `<div class="memo-h"><b class="grow">随手记</b><button class="ico" data-act="memoToggle" aria-label="收起随手记">${ICON.close}</button></div>
+    <div class="small muted">${esc(p?.title || "")} · 记在第 ${q.n} 题（${esc(q.module || "未分类")}）</div>
+    <textarea id="memoIn" rows="4" placeholder="易错点、技巧、要回头看的内容…&#10;⌘/Ctrl + 回车 保存">${esc(MEMO.draft)}</textarea>
+    <div class="row"><button class="btn primary sm" data-act="memoAdd">记一笔</button><span class="small faint grow">会汇总到这套卷子的练习报告下面</span></div>
+    <div class="memo-list">${mine.length ? `<div class="memo-sub">这道题</div>${mine.map(e => memoEntry(e, q.pid)).join("")}` : ""}${others.length ? `<div class="memo-sub">本卷其他题</div>${others.map(e => memoEntry(e, q.pid)).join("")}` : ""}${!mine.length && !others.length ? `<p class="small faint">这套卷子还没有随手记。</p>` : ""}</div>`;
+  const box = $("#memoIn", d);
+  box.oninput = () => { MEMO.draft = box.value; };
+  box.onkeydown = e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); addMemo(); } };
+}
+function addMemo() {
+  const ctx = memoCtx(); const q = ctx && D.questions.get(ctx.qid); const box = $("#memoIn"); const text = (box?.value || "").trim();
+  if (!q || !text) return toast("先写点内容");
+  const doc = { ...memoDoc(q.pid) }; doc.entries = [...doc.entries, { id: uid("m"), at: Date.now(), qid: q.id, n: q.n, mod: q.module || "", aid: ctx.aid || null, text }];
+  saveMemoDoc(doc); MEMO.draft = ""; drawMemo(); setTimeout(() => $("#memoIn")?.focus(), 0); toast("已记下");
+}
+function delMemo(pid, id) { const doc = { ...memoDoc(pid) }; doc.entries = doc.entries.filter(e => e.id !== id); saveMemoDoc(doc); }
+
+/* ---------- report: notes + summary + per-paper todos ---------- */
+function todoRow(t, compact) {
+  const p = t.pid && paperOf(t.pid);
+  return `<div class="todo ${t.done ? "done" : ""}"><input type="checkbox" data-act="todoToggle" data-id="${t.id}" ${t.done ? "checked" : ""} aria-label="完成"><div class="grow" style="min-width:0"><div class="todo-t">${esc(t.text)}</div><div class="row small" style="gap:6px;margin-top:4px">${t.pri ? `<span class="chip ${t.pri === "高" ? "bad" : t.pri === "中" ? "mark" : ""}">${esc(t.pri)}优先</span>` : ""}${t.mod ? `<span class="chip acc">${esc(t.mod)}</span>` : ""}${!compact && p ? `<span class="faint">${esc(p.title)}</span>` : ""}${t.src === "ai" ? `<span class="faint">AI 建议</span>` : ""}${t.mod && t.pid ? `<button class="btn ghost sm" data-act="todoGo" data-id="${t.id}">去错题本 →</button>` : ""}</div></div><button class="btn ghost sm danger" data-act="todoDel" data-id="${t.id}" aria-label="删除待办">×</button></div>`;
+}
+function reportSummary(a) {
+  const pids = a.pid ? [a.pid] : [...new Set(a.qids.map(id => D.questions.get(id)?.pid).filter(Boolean))];
+  const qset = new Set(a.qids);
+  return pids.map(pid => {
+    const p = paperOf(pid); if (!p) return "";
+    const doc = memoDoc(pid);
+    const entries = doc.entries.filter(e => a.pid || qset.has(e.qid)).slice().sort((x, y) => x.n - y.n || x.at - y.at);
+    const byQ = new Map(); entries.forEach(e => { if (!byQ.has(e.qid)) byQ.set(e.qid, []); byQ.get(e.qid).push(e); });
+    const todos = D.todos.filter(t => t.pid === pid).sort((x, y) => (x.done - y.done) || (({ 高: 0, 中: 1, 低: 2 })[x.pri] ?? 1) - (({ 高: 0, 中: 1, 低: 2 })[y.pri] ?? 1));
+    return `
+  <h2 class="section-title">${pids.length > 1 ? esc(p.title) + " · " : ""}本卷随手记（${entries.length}）</h2>
+  <section class="card pad">${entries.length ? [...byQ.entries()].map(([qid, list]) => { const q = D.questions.get(qid) || {}; const r = a.answers?.[qid]; return `<div class="memo-q"><div class="row small"><b>第 ${q.n} 题</b><span class="chip acc">${esc(q.module || "")}</span>${r ? `<span class="${r.res === "ok" ? "good-t" : r.res === "no" ? "bad-t" : "faint"}">你的答案 ${esc(r.c || "—")} / 正确 ${esc(q.answer || "—")}</span>` : ""}<button class="btn ghost sm" data-act="openQ1" data-id="${qid}">看题</button></div>${list.map(e => `<div class="row memo-line"><span class="grow">${esc(e.text)}</span><button class="memo-del" data-act="memoDel" data-pid="${esc(pid)}" data-id="${esc(e.id)}">删除</button></div>`).join("")}</div>`; }).join("") : `<p class="small muted">做题或看解析时，点右上角的“随手记”记下想法，会按题号汇总到这里。</p>`}</section>
+  <h2 class="section-title">本卷总结</h2>
+  <section class="card pad">
+    <textarea class="sumBox" data-pid="${esc(pid)}" rows="6" placeholder="这套卷子的整体问题、时间分配、下次要注意的……">${esc(doc.summary || "")}</textarea>
+    <div class="row" style="margin-top:10px"><span class="small faint grow" id="sumState-${esc(pid)}">${doc.summaryAt ? "已保存 · " + fmtDate(doc.summaryAt) : ""}</span>
+      <button class="btn sm" data-act="sumRule" data-pid="${esc(pid)}" data-aid="${a.id}">按错题生成待办</button>
+      ${S.sample ? `<button class="btn primary sm" data-act="sumAi" data-pid="${esc(pid)}" data-aid="${a.id}">AI 写总结 + 待办</button>` : ""}</div>
+  </section>
+  <h2 class="section-title">本卷待办（${todos.filter(t => !t.done).length} 项未完成）</h2>
+  <section class="card pad">${todos.length ? todos.map(t => todoRow(t, true)).join("") : `<p class="small muted">点上面的“按错题生成待办”，会根据本卷错题、各模块正确率和用时，列出接下来要做的事。也可以在“待办”页手动添加。</p>`}</section>`;
+  }).join("");
+}
+afterRender.report = () => {
+  for (const box of $$(".sumBox")) { let t; box.oninput = () => { clearTimeout(t); t = setTimeout(() => { const doc = { ...memoDoc(box.dataset.pid), summary: box.value, summaryAt: Date.now() }; saveMemoDoc(doc); const st = document.getElementById("sumState-" + box.dataset.pid); if (st) st.textContent = "已保存 · " + fmtDate(doc.summaryAt); }, 700); }; }
+};
+function paperFacts(pid, aid) {
+  const a = D.attempts.find(x => x.id === aid && x.finishedAt) || D.attempts.find(x => x.pid === pid && x.finishedAt);
+  const qids = paperQids(pid);
+  const wrong = qids.filter(id => { const r = a?.answers?.[id]; return r && (r.res === "no" || r.res === "blank"); });
+  const mods = a ? Object.entries(a.summary.byMod).filter(([m]) => !a.pid || true) : [];
+  return { a, wrong, mods };
+}
+function addTodos(list) {
+  let added = 0;
+  for (const t of list) {
+    if (!t.text || D.todos.some(x => !x.done && x.pid === t.pid && x.text === t.text)) continue;
+    const doc = { id: uid("t"), createdAt: Date.now(), done: false, ...t }; D.todos.unshift(doc); queueWrite("todos", doc.id, doc); added++;
+  }
+  return added;
+}
+function ruleTodos(pid, aid) {
+  const { a, wrong, mods } = paperFacts(pid, aid); const out = [];
+  if (!a) return out;
+  const scope = a.pid ? mods : mods.filter(([m]) => wrong.some(id => (D.questions.get(id)?.module || "未分类") === m));
+  const rows = scope.map(([m, x]) => ({ m, acc: pct(x.ok, x.n), x })).sort((p, q) => p.acc - q.acc);
+  for (const r of rows) {
+    const nWrong = wrong.filter(id => (D.questions.get(id)?.module || "未分类") === r.m).length;
+    if (nWrong && r.acc < 70) out.push({ pid, mod: r.m, pri: r.acc < 50 ? "高" : "中", src: "rule", text: `重做本卷「${r.m}」的 ${nWrong} 道错题，对照解析写清错因（本卷正确率 ${r.acc}%）` });
+    if (r.x.sug && r.x.t > r.x.sug * 1.1) out.push({ pid, mod: r.m, pri: "中", src: "rule", text: `「${r.m}」限时训练：本卷用了 ${fmtT(r.x.t)}，建议 ${fmtT(r.x.sug)}，下次按建议时间做一组` });
+  }
+  const kpCount = new Map(); let untagged = 0;
+  for (const id of wrong) { const k = (qs(id).kp || []).filter(x => KP.all.has(x)); if (!k.length) untagged++; k.forEach(x => kpCount.set(x, (kpCount.get(x) || 0) + 1)); }
+  [...kpCount.entries()].sort((x, y) => y[1] - x[1]).slice(0, 4).forEach(([k, n]) => out.push({ pid, mod: k.split("/")[0], pri: n >= 2 ? "高" : "中", src: "rule", text: `复习知识点「${kpShort(k)}」（本卷错 ${n} 题），对照思维导图过一遍` }));
+  if (untagged) out.push({ pid, pri: "低", src: "rule", text: `给本卷 ${untagged} 道还没标知识点的错题标上知识点，方便找出薄弱点` });
+  const doc = memoDoc(pid); if (doc.entries.length && !(doc.summary || "").trim()) out.push({ pid, pri: "低", src: "rule", text: `把本卷 ${doc.entries.length} 条随手记整理成一段总结` });
+  return out;
+}
+async function aiSummary(pid, aid) {
+  if (!S.sample) throw { code: "unavailable" };
+  const p = paperOf(pid); const { a, wrong } = paperFacts(pid, aid); const doc = memoDoc(pid);
+  const modLines = a ? Object.entries(a.summary.byMod).map(([m, x]) => `${m}：${x.ok}/${x.n} 正确（${pct(x.ok, x.n)}%），用时 ${fmtDur(x.t)}${x.sug ? `，建议 ${fmtDur(x.sug)}` : ""}`).join("\n") : "（还没交卷）";
+  const wrongLines = wrong.slice(0, 60).map(id => { const q = D.questions.get(id) || {}; const r = a.answers[id] || {}; const s = qs(id); return `第${q.n}题｜${q.module}｜我选${r.c || "未答"}，正确${q.answer || "?"}｜知识点：${(s.kp || []).map(kpShort).join("、") || "未标"}｜题干：${(q.text || "").replace(/\s+/g, "").replace(/^\d+[.．、]/, "").slice(0, 50)}${s.note ? `｜笔记：${s.note.slice(0, 80)}` : ""}`; }).join("\n");
+  const memoLines = doc.entries.map(e => `第${e.n}题（${e.mod}）：${e.text}`).join("\n") || "（无）";
+  const prompt = `你是一位行测备考教练。根据这名考生做完一套卷子后的数据和随手记，写一段卷子总结，并给出接下来的学习待办。
+要求：
+1. summary：200-350 字中文，先说整体表现，再按模块指出最主要的 2-3 个问题（引用题号和随手记里的原话），最后一句给出下一步重点。不要客套话。
+2. todos：5-8 条，每条是一件具体、可在 1 天内完成的事（例如“重做第 56-60 题，限时 8 分钟”“背诵新思想第四节三个‘新发展’表述”），按优先级排序。
+只输出 JSON：{"summary": "...", "todos": [{"text": "...", "module": "模块名或空", "priority": "高|中|低"}]}
+
+试卷：${p?.title}
+各模块：
+${modLines}
+错题（${wrong.length} 道）：
+${wrongLines || "（无）"}
+随手记：
+${memoLines}
+考生已写的总结：${(doc.summary || "").slice(0, 600) || "（无）"}`;
+  const res = await S.sample.json(prompt, { modelTier: "default" });
+  const summary = String(res?.summary || "").trim();
+  const todos = (Array.isArray(res?.todos) ? res.todos : []).map(t => ({ pid, text: String(t.text || "").trim(), mod: String(t.module || "").trim(), pri: ["高", "中", "低"].includes(t.priority) ? t.priority : "中", src: "ai" })).filter(t => t.text);
+  if (summary) { const cur = (doc.summary || "").trim(); saveMemoDoc({ ...doc, summary: cur ? `${cur}\n\n—— AI 总结 ——\n${summary}` : summary, summaryAt: Date.now() }); }
+  return addTodos(todos);
+}
+
+/* ---------- 待办 view ---------- */
+function vTodos() {
+  const f = UI.todoFilter || "todo";
+  const list = D.todos.filter(t => f === "all" || (f === "done" ? t.done : !t.done));
+  const groups = new Map(); list.forEach(t => { const k = t.pid || ""; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(t); });
+  const priOrder = { 高: 0, 中: 1, 低: 2 };
+  return `
+  <section class="card pad"><div class="kpi"><div><b>${D.todos.filter(t => !t.done).length}</b><span>未完成</span></div><div><b>${D.todos.filter(t => t.done).length}</b><span>已完成</span></div></div></section>
+  <section class="card pad" style="margin-top:14px">
+    <div class="row"><input type="text" id="todoIn" placeholder="添加一条待办，回车确认" style="flex:1;min-width:0"><select id="todoPaper"><option value="">不关联试卷</option>${D.papers.map(p => `<option value="${p.id}">${esc(p.title)}</option>`).join("")}</select><button class="btn primary" data-act="todoAdd">添加</button></div>
+    <p class="small faint" style="margin:8px 0 0">在每套卷子的练习报告底部，可以按错题自动生成待办。</p>
+  </section>
+  <div class="row" style="margin:14px 0"><div class="seg" role="tablist">${[["todo", "未完成"], ["done", "已完成"], ["all", "全部"]].map(([k, n]) => `<button role="tab" aria-selected="${f === k}" data-act="todoFilter" data-v="${k}">${n}</button>`).join("")}</div></div>
+  ${list.length ? [...groups.entries()].map(([pid, ts]) => { const p = paperOf(pid); const last = pid && D.attempts.find(a => a.pid === pid && a.finishedAt); return `<section class="card pad" style="margin-bottom:12px"><div class="row" style="margin-bottom:6px"><b class="grow">${esc(p ? p.title : "通用")}</b>${last ? `<button class="btn ghost sm" data-act="report" data-id="${last.id}">看报告</button>` : ""}</div>${ts.sort((a, b) => (priOrder[a.pri] ?? 1) - (priOrder[b.pri] ?? 1)).map(t => todoRow(t, true)).join("")}</section>`; }).join("") : `<div class="card empty">${f === "done" ? "还没有完成的待办。" : "没有待办。做完一套卷子后，在练习报告底部点“按错题生成待办”。"}</div>`}`;
+}
+afterRender.todos = () => { const i = $("#todoIn"); if (i) i.onkeydown = e => { if (e.key === "Enter") $('[data-act="todoAdd"]').click(); }; };
+function updateBadge() { const b = $("#todoBadge"); if (b) { const n = D.todos.filter(t => !t.done).length; b.textContent = n ? n : ""; } }
+
+/* =====================================================================
+   Practice history
+   ===================================================================== */
+function vHistory() {
+  const now = Date.now(), day = 864e5;
+  const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+  const since = { all: 0, today: startOfToday.getTime(), w: now - 7 * day, m: now - 30 * day }[UI.histTime];
+  const list = D.attempts.filter(a => (UI.histTab === "paper" ? a.mode === "paper" : a.mode !== "paper") && a.startedAt >= since && (UI.histState === "all" || (UI.histState === "done" ? a.finishedAt : !a.finishedAt)));
+  const cnt = k => D.attempts.filter(a => k === "paper" ? a.mode === "paper" : a.mode !== "paper").length;
+  const row = a => {
+    const s = a.summary; const answered = Object.values(a.answers || {}).filter(r => r.c).length;
+    const right = a.finishedAt ? (s?.score != null ? `<span class="hscore">${s.score}<small>/${s.maxScore} 分</small></span>` : `<span class="hscore">${s?.acc ?? 0}<small>% 正确</small></span>`) : `<span class="chip acc">未完成 · ${answered}/${a.qids.length}</span>`;
+    return `<article class="card pad hrow">
+      ${UI.histEdit ? `<button class="btn sm danger" data-act="delAttempt" data-id="${a.id}">删除</button>` : ""}
+      <button class="hmain" data-act="${a.finishedAt ? "report" : "resume"}" data-id="${a.id}">
+        <b>${esc(a.title)}</b>
+        <span class="small faint">${fmtDate(a.startedAt)} · ${a.qids.length} 题${a.finishedAt ? ` · 用时 ${fmtT(s?.time)} · 答对 ${s?.ok}/${s?.n}` : ` · 已用时 ${fmtT(a.elapsed)}`}</span>
+      </button>
+      ${right}
+    </article>`;
+  };
+  return `
+  <div class="row" style="justify-content:center;position:relative">
+    <div class="seg" role="tablist"><button role="tab" aria-selected="${UI.histTab === "paper"}" data-act="histTab" data-v="paper">试卷 <span class="faint">${cnt("paper")}</span></button><button role="tab" aria-selected="${UI.histTab === "redo"}" data-act="histTab" data-v="redo">练习 <span class="faint">${cnt("redo")}</span></button></div>
+    <button class="btn ghost sm" style="position:absolute;right:0" data-act="histEdit">${UI.histEdit ? "完成" : "编辑"}</button>
+  </div>
+  <div class="row" style="margin:14px 0">
+    <select id="histTime"><option value="all">全部时间</option><option value="today" ${UI.histTime === "today" ? "selected" : ""}>今天</option><option value="w" ${UI.histTime === "w" ? "selected" : ""}>近 7 天</option><option value="m" ${UI.histTime === "m" ? "selected" : ""}>近 30 天</option></select>
+    <select id="histState"><option value="all">全部状态</option><option value="todo" ${UI.histState === "todo" ? "selected" : ""}>未完成</option><option value="done" ${UI.histState === "done" ? "selected" : ""}>已完成</option></select>
+  </div>
+  <div class="hist">${list.map(row).join("") || `<div class="card empty">${UI.histTab === "paper" ? "还没有整卷练习记录。在“试卷”页开始做一套题，交卷或中途退出后都会出现在这里。" : "还没有错题重做记录。在错题本里选题“重新做”，记录会出现在这里。"}</div>`}</div>`;
+}
+afterRender.history = () => {
+  $("#histTime").onchange = e => { UI.histTime = e.target.value; render(); };
+  $("#histState").onchange = e => { UI.histState = e.target.value; render(); };
+};
+
+/* =====================================================================
+   Stats
+   ===================================================================== */
+function vStats() {
+  const done = D.attempts.filter(a => a.finishedAt && a.summary);
+  if (!done.length) return `<div class="card empty">做完第一套题后，这里会显示每套题各模块的用时和正确率，以及各知识点的正确率。</div>`;
+  // per-module overall (all graded answers)
+  const mod = {}, kp = {};
+  for (const a of done) for (const qid of a.qids) {
+    const r = a.answers[qid]; const q = D.questions.get(qid); if (!q || !r || r.res === "unk") continue;
+    const m = mod[q.module || "未分类"] ||= { n: 0, ok: 0, t: 0 }; m.n++; m.t += r.t || 0; if (r.res === "ok") m.ok++;
+    const paths = new Set(); for (const k of (qs(qid).kp || [])) { const segs = (KP.all.has(k) ? k : "自定义标签/" + k).split("/"); for (let i = 1; i <= segs.length; i++) paths.add(segs.slice(0, i).join("/")); }
+    for (const pth of paths) { const x = kp[pth] ||= { path: pth, n: 0, ok: 0 }; x.n++; if (r.res === "ok") x.ok++; }
+  }
+  const kpRows = Object.values(kp);
+  const ord = x => KP.order.has(x.path) ? KP.order.get(x.path) : 1e6;
+  const kidsOf = pth => kpRows.filter(x => x.path.split("/").slice(0, -1).join("/") === pth).sort((a, b) => ord(a) - ord(b) || a.path.localeCompare(b.path));
+  const kpMeter = x => { const acc = pct(x.ok, x.n); return `<div class="meter" data-tip="${esc(x.path)}：${x.ok}/${x.n} 答对"><span class="kpname">${esc(x.path.split("/").pop())}</span><div class="track"><div class="fill" style="width:${acc}%;--c:${acc >= 70 ? "var(--good)" : acc >= 50 ? "var(--accent)" : "var(--bad)"}"></div></div><span class="v">${acc}% <span class="faint">(${x.n})</span></span></div>`; };
+  const kpNode = (x, d) => { const kids = kidsOf(x.path); return kids.length ? `<details class="kpd" ${d === 0 ? "open" : ""}><summary>${kpMeter(x)}</summary><div class="kpkids">${kids.map(k => kpNode(k, d + 1)).join("")}</div></details>` : `<div class="kpleaf">${kpMeter(x)}</div>`; };
+  const weak = kpRows.filter(x => x.n >= 2 && x.path.split("/").length >= 3 && !kidsOf(x.path).length).sort((a, b) => pct(a.ok, a.n) - pct(b.ok, b.n) || b.n - a.n).slice(0, 8);
+  return `
+  <h2 class="section-title" style="margin-top:0">所有练习 · 各模块累计</h2>
+  <section class="card pad">${moduleBars(mod)}</section>
+  <h2 class="section-title">每次练习</h2>
+  <section class="card pad tblwrap"><table class="t"><thead><tr><th>时间</th><th>试卷</th><th>正确率</th><th>用时</th>${MODULES.filter(m => done.some(a => a.summary.byMod[m])).map(m => `<th>${esc(m)}</th>`).join("")}<th></th></tr></thead><tbody>
+    ${done.map(a => `<tr><td class="num">${fmtDate(a.finishedAt)}</td><td>${esc(a.title)}${a.mode === "redo" ? ' <span class="chip">重做</span>' : ""}</td><td class="num">${a.summary.acc}%</td><td class="num">${fmtT(a.summary.time)}</td>${MODULES.filter(m => done.some(x => x.summary.byMod[m])).map(m => { const b = a.summary.byMod[m]; return `<td class="num">${b ? `${pct(b.ok, b.n)}% · ${fmtT(b.t)}` : "—"}</td>`; }).join("")}<td><button class="btn sm" data-act="report" data-id="${a.id}">报告</button></td></tr>`).join("")}
+  </tbody></table></section>
+  ${weak.length ? `<h2 class="section-title">最薄弱的知识点</h2><section class="card pad">${weak.map(x => `<div class="kpleaf">${kpMeter(x).replace(`<span class="kpname">${esc(x.path.split("/").pop())}</span>`, `<span class="kpname" style="width:16em" title="${esc(x.path)}">${esc(kpShort(x.path))}</span>`)}</div>`).join("")}</section>` : ""}
+  <h2 class="section-title">知识点正确率</h2>
+  <section class="card pad">${kpRows.length ? kidsOf("").map(x => kpNode(x, 0)).join("") : `<p class="small muted">还没有给题目标知识点。在解析页点“选择知识点”（或“AI 推荐”），这里会按 模块 › 专题 › 知识点 汇总正确率，括号里是做过的题数。</p>`}</section>`;
+}
+
+/* =====================================================================
+   PDF export (pages drawn on canvas, then packed with jsPDF)
+   ===================================================================== */
+const PW = 1240, PH = 1754, M = 90, CW = PW - 2 * M;
+const PFONT = '"PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Noto Sans SC","Microsoft YaHei",sans-serif';
+class PdfBuilder {
+  constructor(title) { this.pages = []; this.title = title; this.newPage(); }
+  newPage() { const c = document.createElement("canvas"); c.width = PW; c.height = PH; const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, PW, PH); x.textBaseline = "top"; this.c = c; this.x = x; this.y = M; this.pages.push(c);
+    x.fillStyle = "#888"; x.font = `20px ${PFONT}`; x.fillText(this.title, M, 40); x.fillText(`第 ${this.pages.length} 页`, PW - M - 80, PH - 60); }
+  space(h) { if (this.y + h > PH - M) this.newPage(); }
+  text(str, { size = 26, color = "#1b2326", bold = false, gap = 10, lh = 1.6, indent = 0 } = {}) {
+    const x = this.x; x.font = `${bold ? "600 " : ""}${size}px ${PFONT}`; x.fillStyle = color;
+    for (const para of String(str).split("\n")) {
+      let line = ""; const lines = [];
+      for (const ch of para) { if (x.measureText(line + ch).width > CW - indent) { lines.push(line); line = ch; } else line += ch; }
+      lines.push(line);
+      for (const l of lines) { this.space(size * lh); x.font = `${bold ? "600 " : ""}${size}px ${PFONT}`; x.fillStyle = color; x.fillText(l, M + indent, this.y); this.y += size * lh; }
+    }
+    this.y += gap;
+  }
+  async image(ref) {
+    const b = await loadBlob(ref); if (!b) { this.text("（图片缺失）", { color: "#999" }); return; }
+    const im = await createImageBitmap(b); const s = Math.min(1, CW / im.width); const w = im.width * s; let h = im.height * s, sy = 0;
+    if (this.y + Math.min(h, 300) > PH - M) this.newPage();
+    while (h > 0) { const room = PH - M - this.y; const take = Math.min(h, room); this.x.drawImage(im, 0, sy / s, im.width, take / s, M, this.y, w, take); this.y += take; h -= take; sy += take; if (h > 0) this.newPage(); }
+    this.y += 16;
+  }
+  rule() { this.space(20); this.x.fillStyle = "#e2e5e2"; this.x.fillRect(M, this.y + 8, CW, 2); this.y += 24; }
+  async blob() {
+    const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: "px", format: [PW, PH], hotfixes: ["px_scaling"], compress: true });
+    this.pages.forEach((c, i) => { if (i) doc.addPage([PW, PH]); doc.addImage(c.toDataURL("image/jpeg", 0.86), "JPEG", 0, 0, PW, PH); });
+    return doc.output("blob");
+  }
+}
+function exportDialog() {
+  showSheet(`<h3 style="font-family:var(--f-display)">导出错题重做卷</h3>
+  <p class="small muted">题目在前，答案集中放在最后，方便打印重做后再对答案。</p>
+  <label class="row small" style="margin:10px 0"><input type="checkbox" id="exAna" checked> 答案页附上解析</label>
+  <label class="row small" style="margin:10px 0"><input type="checkbox" id="exNote" checked> 答案页附上我的笔记</label>
+  <label class="row small" style="margin:10px 0"><input type="checkbox" id="exGap"> 每题后留出演算空白</label>
+  <div class="row" style="margin-top:14px"><button class="btn grow" data-act="closeSheet">取消</button><button class="btn primary grow" data-act="doExport">生成 PDF</button></div>`);
+}
+async function exportRedo(items, opt) {
+  if (!window.jspdf) return toast("PDF 组件没有加载成功");
+  toast("正在生成 PDF…", 60000);
+  const mods = [...new Set(items.map(x => x.q.module || "未分类"))];
+  const title = `错题重做 · ${mods.join("、")} · ${items.length}题`;
+  const B = new PdfBuilder(title);
+  B.text(title, { size: 40, bold: true, gap: 6 }); B.text(`导出于 ${new Date().toLocaleDateString("zh-CN")}`, { size: 22, color: "#777", gap: 24 });
+  let lastMat = null, lastMod = null;
+  for (let i = 0; i < items.length; i++) {
+    const { q } = items[i];
+    if (q.module !== lastMod) { B.space(80); B.text(`【${q.module || "未分类"}】`, { size: 30, bold: true, gap: 10 }); lastMod = q.module; }
+    if (q.mat && q.matKey !== lastMat) { B.space(320); B.text("材料", { size: 22, color: "#8a6a00", bold: true, gap: 4 }); await B.image(q.mat); }
+    lastMat = q.mat ? q.matKey : null;
+    B.space(320); B.text(`${i + 1}.  ${qLabel(q)}`, { size: 22, color: "#30509b", bold: true, gap: 4 });
+    await B.image(q.img);
+    if (opt.gap) B.y += 260;
+    B.rule();
+  }
+  B.newPage(); B.text("参考答案", { size: 36, bold: true, gap: 16 });
+  const keyLine = items.map((x, i) => `${i + 1}.${x.q.answer || "?"}`); for (let i = 0; i < keyLine.length; i += 10) B.text(keyLine.slice(i, i + 10).join("   "), { size: 26, gap: 4 });
+  B.y += 20;
+  if (opt.ana || opt.note) for (let i = 0; i < items.length; i++) {
+    const { q, s } = items[i]; B.rule(); B.text(`${i + 1}. 答案 ${q.answer || "?"}　${qLabel(q)}`, { size: 24, bold: true, gap: 6 });
+    if (opt.ana && q.analysis) B.text(q.analysis, { size: 22, color: "#333", gap: 8 });
+    if (opt.note && (s.note || "").trim()) { B.text("我的笔记", { size: 22, bold: true, color: "#8a6a00", gap: 2 }); B.text(s.note, { size: 22, color: "#5a4300", gap: 8 }); }
+  }
+  const blob = await B.blob(); await saveFile(`${title}.pdf`, blob);
+}
+async function exportNotesPdf(items, opt = {}) {
+  if (!window.jspdf) return toast("PDF 组件没有加载成功");
+  toast("正在生成 PDF…", 60000);
+  const title = `错题笔记 · ${[...new Set(items.map(x => x.q.module || "未分类"))].join("、")} · ${items.length}题`;
+  const B = new PdfBuilder(title); B.text(title, { size: 40, bold: true, gap: 24 });
+  let lastMod = null;
+  for (let i = 0; i < items.length; i++) {
+    const { q, s } = items[i];
+    if (q.module !== lastMod) { B.space(80); B.text(`【${q.module || "未分类"}】`, { size: 30, bold: true, gap: 10 }); lastMod = q.module; }
+    B.space(320); B.text(`${i + 1}.  ${qLabel(q)}　正确答案 ${q.answer || "?"}`, { size: 22, color: "#30509b", bold: true, gap: 4 });
+    if (q.mat) await B.image(q.mat);
+    await B.image(q.img);
+    const mine = D.attempts.find(x => x.finishedAt && x.answers?.[q.id]?.c)?.answers[q.id].c;
+    if (mine) B.text(`我的答案 ${mine}　正确答案 ${q.answer || "?"}`, { size: 22, color: mine === q.answer ? "#1f8456" : "#c43d2b", gap: 6 });
+    B.text("✎ 笔记", { size: 22, bold: true, color: "#8a6a00", gap: 2 }); B.text(s.note || "", { size: 24, color: "#3b2f00", gap: 8 });
+    if (opt.ana && q.analysis) { B.text("解析", { size: 22, bold: true, color: "#555", gap: 2 }); B.text(q.analysis, { size: 21, color: "#444", gap: 8 }); }
+    if ((s.kp || []).length) B.text("知识点：" + s.kp.map(kpShort).join("、"), { size: 20, color: "#777", gap: 6 });
+    B.rule();
+  }
+  await saveFile(`${title}.pdf`, await B.blob());
+}
+async function exportNotesMd(items) {
+  let md = `# 错题笔记\n\n导出于 ${new Date().toLocaleString("zh-CN")}\n`; let lastMod = null;
+  for (const { q, s } of items) {
+    if (q.module !== lastMod) { md += `\n## ${q.module || "未分类"}\n`; lastMod = q.module; }
+    md += `\n### ${qLabel(q)}（答案 ${q.answer || "?"}）\n\n${(q.text || "").trim()}\n\n**笔记**\n\n${(s.note || "").trim()}\n`;
+    if ((s.kp || []).length) md += `\n知识点：${s.kp.map(kpShort).join("、")}\n`;
+  }
+  await saveFile("错题笔记.md", md);
+}
+
+/* ---------- backup (local mode) ---------- */
+async function backup() {
+  toast("正在打包备份…", 30000);
+  const out = { v: 1, papers: D.papers, questions: [...D.questions.values()], attempts: D.attempts, qstate: [...D.qstate.values()], images: {} };
+  for (const q of out.questions) for (const ref of [q.img, q.mat]) if (ref && !out.images[ref]) { const b = await loadBlob(ref); if (b) out.images[ref] = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); }); }
+  await saveFile(`错题本备份-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(out));
+}
+async function restoreBackup(file) {
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text()); const map = {};
+    toast("正在恢复…", 60000);
+    for (const [ref, du] of Object.entries(data.images || {})) { const b = await (await fetch(du)).blob(); map[ref] = await putImage(b); }
+    for (const q of data.questions) { q.img = map[q.img] || q.img; q.mat = map[q.mat] || q.mat; }
+    for (const [col, list] of [["papers", data.papers], ["questions", data.questions], ["attempts", data.attempts], ["qstate", data.qstate]]) for (const x of list || []) await dbPut(col, x.id, x);
+    await loadData(); toast("备份已恢复"); render();
+  } catch (e) { toast("恢复失败：" + e.message); }
+}
+
+/* =====================================================================
+   Events
+   ===================================================================== */
+document.addEventListener("click", async e => {
+  const el = e.target.closest("[data-act]"); if (!el) return;
+  const act = el.dataset.act, id = el.dataset.id;
+  if (el.tagName === "SELECT" || (el.tagName === "INPUT" && el.type !== "checkbox")) return;
+  switch (act) {
+    case "nav": if (el.dataset.v === "import") resetImport(); go(el.dataset.v); break;
+    case "start": { const p = paperOf(id); startAttempt({ pid: id, qids: paperQids(id), title: p.title, mode: "paper" }); break; }
+    case "resume": { const a = D.attempts.find(x => x.id === id); if (a) openPractice(a); break; }
+    case "report": go("report", { reportId: id, reportFrom: UI.view === "history" ? "history" : UI.view === "stats" ? "stats" : "home" }); break;
+    case "paperReview": { const list = paperQids(id).map(qid => ({ qid })); openReview(list, 0, "home"); break; }
+    case "delPaper": {
+      if (el.dataset.confirm !== "1") { el.dataset.confirm = "1"; el.textContent = "确认删除？"; setTimeout(() => { if (el.isConnected) { el.dataset.confirm = ""; el.textContent = "删除"; } }, 3000); return; }
+      const qids = paperQids(id); toast("正在删除…"); const mats = new Set();
+      for (const qid of qids) { const q = D.questions.get(qid); if (q.img) await delImage(q.img); if (q.mat) mats.add(q.mat); await dbDel("questions", qid); await dbDel("qstate", qid); D.questions.delete(qid); D.qstate.delete(qid); }
+      for (const r of mats) await delImage(r);
+      for (const a of D.attempts.filter(a => a.pid === id)) await dbDel("attempts", a.id);
+      D.attempts = D.attempts.filter(a => a.pid !== id); await dbDel("papers", id); D.papers = D.papers.filter(p => p.id !== id); toast("已删除"); render(); break;
+    }
+    case "backup": backup(); break;
+    case "aiSave": { const c = readAiForm(); if (!c.key || !c.base || !c.model) return toast("请填完整：接口地址、模型和 API Key"); try { localStorage.setItem("cuotiben.ai", JSON.stringify(c)); } catch { return toast("浏览器不允许保存设置"); } S.sample = makeSample(c); toast("已保存，AI 功能已启用"); render(); break; }
+    case "aiClear": { try { localStorage.removeItem("cuotiben.ai"); } catch {} S.sample = null; toast("已清除 API Key"); render(); break; }
+    case "aiTest": { const c = readAiForm(); if (!c.key || !c.base || !c.model) return toast("请填完整：接口地址、模型和 API Key"); const st = $("#aiState"); st.textContent = "测试中…"; try { const res = await makeSample(c).json('请输出 {"ok": true}'); st.textContent = res && res.ok ? "连接成功，记得点保存" : "能连上，但返回内容不对，可换个模型试试"; } catch (e) { st.textContent = "测试失败：" + (e.message || e.code); } break; }
+    case "memoToggle": MEMO.open = !MEMO.open; $$('[data-act="memoToggle"][aria-pressed]').forEach(b => b.setAttribute("aria-pressed", MEMO.open)); drawMemo(); if (MEMO.open) setTimeout(() => $("#memoIn")?.focus(), 50); if (P && $(".prac")) setupInk(); break;
+    case "memoAdd": addMemo(); break;
+    case "memoDel": { if (el.dataset.confirm !== "1") { el.dataset.confirm = "1"; el.textContent = "确认删除"; return; } delMemo(el.dataset.pid, id); drawMemo(); if (UI.view === "report") render(); break; }
+    case "openQ1": { const a = D.attempts.find(x => x.id === UI.reportId); const list = a.qids.map(q => ({ qid: q, mine: a.answers[q]?.c, t: a.answers[q]?.t })); openReview(list, Math.max(0, a.qids.indexOf(id)), "report"); break; }
+    case "sumRule": { const n = addTodos(ruleTodos(el.dataset.pid, el.dataset.aid)); toast(n ? `已生成 ${n} 条待办` : "没有新的待办可生成"); render(); break; }
+    case "sumAi": { el.disabled = true; el.textContent = "AI 思考中…（约半分钟）"; try { const n = await aiSummary(el.dataset.pid, el.dataset.aid); toast(`总结已写好，新增 ${n} 条待办`); } catch (e) { toast(aiErr(e)); } render(); break; }
+    case "todoAdd": { const i = $("#todoIn"); const text = i.value.trim(); if (!text) return; addTodos([{ text, pid: $("#todoPaper").value || null, src: "manual" }]); render(); setTimeout(() => $("#todoIn")?.focus(), 0); break; }
+    case "todoToggle": { const t = D.todos.find(x => x.id === id); if (!t) break; t.done = el.checked; t.doneAt = t.done ? Date.now() : null; queueWrite("todos", t.id, t); setTimeout(() => { render(); }, 250); break; }
+    case "todoDel": { if (el.dataset.confirm !== "1") { el.dataset.confirm = "1"; el.textContent = "删除？"; return; } D.todos = D.todos.filter(x => x.id !== id); await dbDel("todos", id).catch(() => {}); render(); break; }
+    case "todoFilter": UI.todoFilter = el.dataset.v; render(); break;
+    case "todoGo": { const t = D.todos.find(x => x.id === id); UI.bookPaper = t.pid || "all"; if (t.mod) UI.bookOpen.add(t.mod); go("book"); break; }
+    case "histTab": UI.histTab = el.dataset.v; render(); break;
+    case "histEdit": UI.histEdit = !UI.histEdit; render(); break;
+    case "delAttempt": {
+      if (el.dataset.confirm !== "1") { el.dataset.confirm = "1"; el.textContent = "确认删除？"; return; }
+      await dbDel("attempts", id); D.attempts = D.attempts.filter(a => a.id !== id); toast("已删除这条记录（错题本不受影响）"); render(); break;
+    }
+    // import
+    case "impAnalyze": impAnalyze(); break;
+    case "impBack": IMP.step = 1; render(); break;
+    case "impCommit": impCommit(); break;
+    case "impOcr": {
+      IMP.busy = "准备文字识别…"; IMP.prog = 0; render();
+      try {
+        await ocrPages(IMP.pdf, IMP.pages, { force: true, onStep: (m, f) => { IMP.busy = m; if (f != null) IMP.prog = Math.round(f * 100); setImpProgress(); const b = $(".side .progress i"); if (b) b.style.width = IMP.prog + "%"; } });
+        const fn = IMP.st.firstNum; IMP.st = detectStructure(IMP.pages); const fq = IMP.st.markers.filter(m => m.type === "q").sort(markerSort)[0]; IMP.st.firstNum = fq ? fq.num : fn; IMP.st.template = "";
+        for (const t of TEMPLATES) if (t.mods.length === IMP.st.modules.length && t.mods.every((m, i) => m[0] === IMP.st.modules[i].name)) { IMP.st.template = t.id; IMP.st.modules.forEach((m, i) => { m.pts = t.mods[i][2] ?? null; m.min = t.mods[i][3] ?? null; }); break; }
+        IMP.busy = ""; toast("识别完成");
+      } catch (e) { IMP.busy = ""; toast("文字识别失败：" + (e.message || e), 5000); }
+      render(); break;
+    }
+    case "tool": IMP.tool = el.dataset.t; render(); break;
+    case "delMarker": { e.stopPropagation(); const sy = window.scrollY; IMP.st.markers.splice(+el.dataset.mi, 1); render(); window.scrollTo(0, sy); break; }
+    case "modAdd": { const R = buildRegions(IMP.pages, IMP.st); const last = IMP.st.modules[IMP.st.modules.length - 1]; IMP.st.modules.push({ name: "常识判断", from: Math.min((last?.from || 0) + 10, R.qs[R.qs.length - 1]?.n || 1) }); render(); break; }
+    case "modDel": IMP.st.modules.splice(+el.dataset.i, 1); render(); break;
+    // practice
+    case "pPick": { const qid = P.a.qids[P.a.cur]; const r = P.a.answers[qid] ||= {}; r.c = r.c === el.dataset.l ? undefined : el.dataset.l; queueSave(); $$(".opt").forEach(b => b.setAttribute("aria-pressed", b.dataset.l === r.c)); if (r.c && P.a.cur < P.a.qids.length - 1 && !P.ink) setTimeout(() => { if (P && P.a.answers[qid].c === r.c) practiceGo(P.a.cur + 1); }, 260); break; }
+    case "pNext": practiceGo(P.a.cur + 1); break;
+    case "pPrev": practiceGo(P.a.cur - 1); break;
+    case "pFlag": { const qid = P.a.qids[P.a.cur]; const r = P.a.answers[qid] ||= {}; r.f = !r.f; queueSave(); el.classList.toggle("marked", r.f); el.setAttribute("aria-pressed", r.f); el.innerHTML = r.f ? ICON.starf : ICON.star; break; }
+    case "pInk": P.ink = !P.ink; renderPractice(); break;
+    case "inkTool": P.inkTool = el.dataset.t; $$('[data-act="inkTool"]').forEach(b => b.setAttribute("aria-pressed", b.dataset.t === P.inkTool)); break;
+    case "inkUndo": { const st = INK.get(P.a.qids[P.a.cur]); st?.pop(); P.redrawInk?.(); break; }
+    case "inkClear": { const st = INK.get(P.a.qids[P.a.cur]); if (st) st.length = 0; P.redrawInk?.(); break; }
+    case "pCard": showSheet(`<div class="row"><h3 class="grow" style="font-family:var(--f-display)">答题卡</h3><button class="btn primary" data-act="pSubmit">交卷</button></div><div class="legend" style="margin-top:8px"><span style="--c:var(--accent)">已答</span><span style="--c:var(--line)">未答</span><span style="--c:var(--mark)">标记</span></div>${answerCard(P.a)}`); break;
+    case "pJump": closeSheet(); practiceGo(+el.dataset.i); break;
+    case "pExit": commitTime(); await dbPut("attempts", P.a.id, P.a).catch(() => {}); closePractice(); toast("进度已保存，可以随时继续"); render(); break;
+    case "pSubmit": {
+      if (el.dataset.confirm === "1" || $("#sheetBg")?.dataset.submit) { submitAttempt(); break; }
+      const left = P.a.qids.filter(q => !(P.a.answers[q] || {}).c).length; closeSheet();
+      showSheet(`<h3 style="font-family:var(--f-display)">确定交卷？</h3><p class="muted">${left ? `还有 <b>${left}</b> 道题没作答。` : "全部题目都已作答。"} 已用时 ${fmtDur(curElapsed())}。</p><div class="row" style="margin-top:14px"><button class="btn grow" data-act="closeSheet">再检查一下</button><button class="btn primary grow" data-act="pSubmit" data-confirm="1">交卷</button></div>`);
+      break;
+    }
+    case "closeSheet": closeSheet(); break;
+    // report & review
+    case "rvAll": case "rvWrong": case "rvJump": {
+      const a = D.attempts.find(x => x.id === UI.reportId);
+      let list = a.qids.map(qid => ({ qid, mine: a.answers[qid]?.c, t: a.answers[qid]?.t, res: a.answers[qid]?.res }));
+      if (act === "rvWrong") list = list.filter(x => x.res === "no" || x.res === "blank");
+      openReview(list, act === "rvJump" ? +el.dataset.i : 0, "report"); break;
+    }
+    case "rvBack": go(UI.reviewFrom || "home"); break;
+    case "rvPrev": UI.reviewIdx--; render(); break;
+    case "rvNext": UI.reviewIdx++; render(); break;
+    case "rvBook": { const qid = UI.reviewList[UI.reviewIdx].qid; const s = qs(qid); await setQS(qid, { inBook: !s.inBook, bookAt: s.inBook ? s.bookAt : Date.now() }); render(); break; }
+    case "rvFlag": { const qid = UI.reviewList[UI.reviewIdx].qid; await setQS(qid, { flag: !qs(qid).flag }); render(); break; }
+    case "copySel": { const sel = window.getSelection(); const box = $("#anaBox"); const t = sel && box && box.contains(sel.anchorNode) ? sel.toString() : ""; appendNote(t); break; }
+    case "copyAll": appendNote($("#anaBox")?.textContent || ""); break;
+    case "saveAna": { const qid = UI.reviewList[UI.reviewIdx].qid; const q = D.questions.get(qid); q.analysis = $("#anaEdit").value.trim(); await dbPut("questions", qid, q); render(); break; }
+    case "kpOpen": kpOpen(UI.reviewList[UI.reviewIdx].qid); break;
+    case "kpToggle": await kpToggle(el.dataset.p); break;
+    case "kpTw": { const pth = el.dataset.p; KPUI.open.has(pth) ? KPUI.open.delete(pth) : KPUI.open.add(pth); drawKp(); break; }
+    case "kpDone": closeSheet(); render(); break;
+    case "kpAi": { el.disabled = true; el.textContent = "AI 思考中…"; try { const got = await aiTag(UI.reviewList[UI.reviewIdx].qid); toast(got.length ? "已添加：" + got.map(kpShort).join("、") : "AI 没找到合适的知识点，请手动选择"); } catch (e) { toast(aiErr(e)); } render(); break; }
+    case "bookAi": await aiBatch(selectedInOrder(UI.bookSel, s => s.inBook)); break;
+    case "tagDel": { const qid = UI.reviewList[UI.reviewIdx].qid; const kp = [...(qs(qid).kp || [])]; kp.splice(+el.dataset.i, 1); await setQS(qid, { kp }); render(); break; }
+    // book & notes
+    case "grpToggle": { const m = el.dataset.m; UI.bookOpen.has(m) ? UI.bookOpen.delete(m) : UI.bookOpen.add(m); render(); break; }
+    case "grpSel": case "qSel": case "selAll": {
+      const kind = el.dataset.k, sel = kind === "book" ? UI.bookSel : UI.noteSel; const fil = kind === "book" ? (s => s.inBook) : (s => (s.note || "").trim());
+      const groups = bookItems(fil);
+      const ids = act === "qSel" ? [id] : act === "grpSel" ? (groups.find(g => g[0] === el.dataset.m)?.[1] || []).map(x => x.q.id) : groups.flatMap(g => g[1]).map(x => x.q.id);
+      ids.forEach(x => el.checked ? sel.add(x) : sel.delete(x)); const sy = window.scrollY; render(); window.scrollTo(0, sy); break;
+    }
+    case "openQ": { const kind = el.dataset.k; const fil = kind === "book" ? (s => s.inBook) : (s => (s.note || "").trim()); const all = bookItems(fil).flatMap(g => g[1]); openReview(all.map(x => ({ qid: x.q.id })), all.findIndex(x => x.q.id === id), kind); break; }
+    case "bookReview": { const items = selectedInOrder(UI.bookSel, s => s.inBook); openReview(items.map(x => ({ qid: x.q.id })), 0, "book"); break; }
+    case "bookRedo": { const items = selectedInOrder(UI.bookSel, s => s.inBook); const mods = [...new Set(items.map(x => x.q.module || "未分类"))]; startAttempt({ qids: items.map(x => x.q.id), title: `错题重做 · ${mods.join("、")}`, mode: "redo" }); break; }
+    case "bookExport": exportDialog(); break;
+    case "doExport": { const opt = { ana: $("#exAna").checked, note: $("#exNote").checked, gap: $("#exGap").checked }; closeSheet(); await exportRedo(selectedInOrder(UI.bookSel, s => s.inBook), opt); break; }
+    case "notesPdf": showSheet(`<h3 style="font-family:var(--f-display)">导出笔记 PDF</h3><p class="small muted">每道题：题目（含材料）、正确答案、你的答案、我的笔记、知识点。</p><label class="row small" style="margin:10px 0"><input type="checkbox" id="nxAna"> 同时附上解析</label><div class="row" style="margin-top:14px"><button class="btn grow" data-act="closeSheet">取消</button><button class="btn primary grow" data-act="doNotesPdf">生成 PDF</button></div>`); break;
+    case "doNotesPdf": { const ana = $("#nxAna").checked; closeSheet(); await exportNotesPdf(selectedInOrder(UI.noteSel, s => (s.note || "").trim()), { ana }); break; }
+    case "notesMd": await exportNotesMd(selectedInOrder(UI.noteSel, s => (s.note || "").trim())); break;
+  }
+});
+document.addEventListener("change", async e => {
+  const el = e.target; const act = el.dataset?.act; if (!act) return;
+  if (act === "modName") { IMP.st.modules[+el.dataset.i].name = el.value; render(); }
+  if (act === "modFrom") { IMP.st.modules[+el.dataset.i].from = Math.max(1, +el.value || 1); IMP.st.modules.sort((a, b) => a.from - b.from); render(); }
+  if (act === "rvSetAns") { const qid = UI.reviewList[UI.reviewIdx].qid; const q = D.questions.get(qid); q.answer = el.value; await dbPut("questions", qid, q); toast("答案已更新"); render(); }
+});
+document.addEventListener("keydown", e => {
+  if (!P || !$(".prac") || e.target.matches("input,textarea,select")) return;
+  const k = e.key.toUpperCase();
+  if ("ABCD".includes(k) && k.length === 1) $(`.opt[data-l="${k}"]`)?.click();
+  else if ("1234".includes(k) && k.length === 1) $(`.opt[data-l="${"ABCD"[+k - 1]}"]`)?.click();
+  else if (e.key === "ArrowRight") practiceGo(P.a.cur + 1);
+  else if (e.key === "ArrowLeft") practiceGo(P.a.cur - 1);
+});
+// tooltips for meters
+document.addEventListener("pointerover", e => { const el = e.target.closest("[data-tip]"); let t = $("#tipEl"); if (!el) { if (t) t.hidden = true; return; } if (!t) { t = document.createElement("div"); t.id = "tipEl"; t.className = "tip"; document.body.appendChild(t); } t.textContent = el.dataset.tip; t.hidden = false; const r = el.getBoundingClientRect(); t.style.left = Math.min(window.innerWidth - 250, r.left) + "px"; t.style.top = (r.top - 34) + "px"; });
+window.addEventListener("resize", () => { if (P && P.ink) setupInk(); });
+document.addEventListener("scroll", () => { const t = $("#tipEl"); if (t) t.hidden = true; }, true);
+
+/* =====================================================================
+   Boot
+   ===================================================================== */
+(async function boot() {
+  await initStorage();
+  try { await loadData(); const m = await dbAll("meta"); D.meta = Object.fromEntries(m.map(x => [x.id, x])); } catch (e) { console.error(e); toast("读取数据失败：" + (e.message || e.code)); }
+  render();
+})();
+</script>
+
+</body>
+</html>
