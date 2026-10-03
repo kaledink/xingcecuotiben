@@ -125,7 +125,7 @@ textarea{width:100%;resize:vertical;line-height:1.6}
 .prac-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr)}
 .prac-body.has-mat{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 @media (max-width:900px){.prac-body.has-mat{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}}
-.matpane{overflow:auto;border-right:1px solid var(--line);background:var(--sunk);padding:14px}
+.matpane{overflow:auto;border-right:1px solid var(--line);background:var(--sunk);padding:14px;position:relative}
 @media (max-width:900px){.matpane{border-right:0;border-bottom:1px solid var(--line);max-height:38vh}}
 .matpane .lbl{font-size:12px;color:var(--ink3);margin-bottom:6px;display:flex;justify-content:space-between}
 .qpane{overflow:auto;position:relative;-webkit-overflow-scrolling:touch}
@@ -133,13 +133,17 @@ textarea{width:100%;resize:vertical;line-height:1.6}
 .qimg{display:block;width:100%;height:auto;background:#fff;border-radius:6px;border:1px solid var(--line)}
 .matpane .qimg{border-radius:4px}
 .qmeta{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
-.opts{display:flex;gap:14px;margin:18px 0 8px;flex-wrap:wrap}
+.opts{display:flex;gap:14px;margin:18px 0 8px;flex-wrap:wrap;position:relative;z-index:6}
 .opt{width:58px;height:58px;border-radius:50%;border:1.5px solid var(--line);background:var(--card);font-size:20px;font-weight:600;color:var(--ink2)}
 .opt[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .opt.ok{background:var(--good);border-color:var(--good);color:#fff}
 .opt.no{background:var(--bad);border-color:var(--bad);color:#fff}
-.scratch{height:55vh}
+.scratch{height:90vh;padding-top:8px}
 .ink{position:absolute;left:0;top:0;pointer-events:none;z-index:5}
+.prac.inking .qpane{overscroll-behavior:contain}
+.prac.inking .qsheet,.prac.inking .qsheet *,.prac.inking .matpane,.prac.inking .matpane *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.prac.inking .matpane{overscroll-behavior:contain}
+.prac.inking .qimg{-webkit-user-drag:none;pointer-events:none}
 .ink.on{pointer-events:auto;touch-action:none;cursor:crosshair}
 .inkbar{position:absolute;right:16px;top:12px;z-index:8;display:flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:4px;box-shadow:var(--shadow)}
 .inkbar .ico{width:36px;height:36px}
@@ -241,7 +245,22 @@ table.t th{color:var(--ink3);font-weight:500}
 .memo-q:first-child{border-top:0}
 .memo-line{padding:4px 0 0 12px;border-left:2px solid var(--mark-soft);margin-top:6px}
 .good-t{color:var(--good)} .bad-t{color:var(--bad)}
-@media (min-width:1000px){body.memo-open .prac{right:340px} body.memo-open main.wrap{padding-right:356px} body.memo-open .bar-bottom{right:340px}}
+.ov-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.ch-t{font-size:13px;color:var(--ink2);font-weight:600;margin-bottom:4px}
+svg.lc{width:100%;height:auto;display:block}
+svg.spark{width:90px;height:26px;display:block}
+.stars i{font-style:normal;color:var(--line);font-size:15px;letter-spacing:1px}
+.stars i.on{color:var(--mark)} .stars i.half{background:linear-gradient(90deg,var(--mark) 50%,var(--line) 50%);-webkit-background-clip:text;background-clip:text;color:transparent}
+table.heat td{text-align:center;line-height:1.35} table.heat td:first-child{text-align:left}
+td.h-good{background:var(--good-soft)} td.h-mid{background:var(--mark-soft)} td.h-bad{background:var(--bad-soft)}
+.sub-t{font-size:13px;color:var(--ink2);margin:14px 0 4px;font-weight:600}
+.kpby{font-size:12px;color:var(--ink3)}
+@media (min-width:700px){body.memo-open .prac{right:min(340px,42vw)} body.memo-open .memo{width:min(340px,42vw)} body.memo-open main.wrap{padding-right:calc(min(340px,42vw) + 16px)} body.memo-open .bar-bottom{right:min(340px,42vw)}}
+@media (min-width:700px) and (max-width:1399px){body.memo-open .prac-body.has-mat{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)} body.memo-open .matpane{border-right:0;border-bottom:1px solid var(--line);max-height:38vh}}
+@media (max-width:699px){.memo{top:auto;left:0;width:100%;height:44vh;border-left:0;border-top:1px solid var(--line);border-radius:14px 14px 0 0;box-shadow:0 -6px 20px rgba(0,0,0,.1)} body.memo-open .prac{bottom:44vh} body.memo-open main.wrap{padding-bottom:calc(44vh + 120px)} body.memo-open .bar-bottom{bottom:44vh}}
+.sug-box{margin-top:14px;border:1px dashed var(--accent);border-radius:10px;padding:12px;background:var(--accent-soft)}
+.sug-row{display:flex;gap:8px;align-items:flex-start;padding:10px 0;border-top:1px dashed var(--line)}
+.sug-row:first-of-type{border-top:0}
 .todo{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px dashed var(--line)}
 .todo:first-child{border-top:0}
 .todo input{margin-top:3px;flex:none}
@@ -265,7 +284,7 @@ table.t th{color:var(--ink3);font-weight:500}
         <button class="tab" data-act="nav" data-v="history">练习历史</button>
         <button class="tab" data-act="nav" data-v="book">错题本</button>
         <button class="tab" data-act="nav" data-v="notes">笔记</button>
-        <button class="tab" data-act="nav" data-v="stats">统计</button>
+        <button class="tab" data-act="nav" data-v="stats">总体报告</button>
         <button class="tab" data-act="nav" data-v="todos">待办<span class="tabbadge" id="todoBadge"></span></button>
       </nav>
       <span class="store-chip" id="storeChip">正在连接存储…</span>
@@ -704,7 +723,7 @@ async function dbAll(col) {
       let q = S.db.collection(col).orderBy("k").limit(500);
       if (last !== null) q = q.where("k", ">", last);
       const snap = await retry(() => q.get());
-      snap.docs.forEach(d => out.push({ id: d.id, ...d.data() }));
+      snap.docs.forEach(d => out.push({ id: d.id, ...JSON.parse(JSON.stringify(d.data() || {})) })); // store snapshots are frozen; keep an editable copy
       if (snap.size < 500) break; last = snap.docs[snap.docs.length - 1].data().k;
     }
     return out;
@@ -787,6 +806,7 @@ async function loadData() {
   const [papers, questions, attempts, qstate, memos, todos] = await Promise.all(["papers", "questions", "attempts", "qstate", "memos", "todos"].map(dbAll));
   D.memos = new Map(memos.map(m => [m.id, m]));
   D.todos = todos.sort((a, b) => (a.done - b.done) || (b.createdAt - a.createdAt));
+  try { migrateMemoTodos(); } catch (e) { console.warn(e); }
   D.papers = papers.sort((a, b) => b.createdAt - a.createdAt);
   D.questions = new Map(questions.map(q => [q.id, q]));
   D.attempts = attempts.sort((a, b) => b.startedAt - a.startedAt);
@@ -812,6 +832,194 @@ const rootsFor = m => (MOD_ROOTS[m] || KP.root.children.map(c => c.path)).map(p 
 const kpShort = p => { const s = p.split("/"); return s.length > 2 ? s.slice(-2).join(" › ") : s.join(" › "); };
 const kpUnder = roots => { const out = []; const walk = n => { out.push(n.path); n.children.forEach(walk); }; roots.forEach(walk); return out; };
 const qSnippet = q => (q.text || "").replace(/^\d{1,3}[\.．、]/, "").slice(0, 60) || `第${q.n}题`;
+/* ---------- automatic knowledge-point tagging (rules) ---------- */
+const KPKW = {
+  "资料分析/统计术语": ["统计术语", "百分点", "拉动增长", "增长贡献率"],
+  "资料分析/速算技巧": [],
+  "资料分析/基期量与现期量": ["基期量", "现期量", "基期和差", "现期和差", "基期值", "现期值", "基期计算", "现期计算", "基期问题", "现期问题"],
+  "资料分析/增长率": ["增长率", "增速"],
+  "资料分析/增长率/一般增长率": ["一般增长率", "增长最快", "增长最慢", "增速最快", "增速最慢", "增长率计算", "增长率比较"],
+  "资料分析/增长率/间隔增长率": ["间隔增长率", "间隔增速"],
+  "资料分析/增长率/混合增长率": ["混合增长率", "混合增速"],
+  "资料分析/增长率/年均增长率": ["年均增长率", "年均增速", "年均增长"],
+  "资料分析/增长量": ["增长量", "增量", "增长量计算", "增长量比较", "减少量"],
+  "资料分析/比重": ["比重", "占比"],
+  "资料分析/比重/现期比重": ["现期比重"], "资料分析/比重/基期比重": ["基期比重"], "资料分析/比重/两期比重": ["两期比重", "比重变化", "比重上升", "比重下降"],
+  "资料分析/倍数": ["倍数", "多几倍", "是…的几倍", "倍数问题"],
+  "资料分析/平均数": ["平均数", "平均值", "均值", "平均每"],
+  "资料分析/平均数/现期平均数": ["现期平均数"], "资料分析/平均数/基期平均数": ["基期平均数"], "资料分析/平均数/两期平均数": ["两期平均数", "平均数的增长", "平均数变化"],
+  "资料分析/简单计算": ["简单计算", "简单和差", "直接读数", "读数"],
+  "判断推理/图形推理/数量类": ["数量规律", "直角", "线条数", "直线数", "曲线数", "笔画", "一笔画", "面数", "封闭区域", "交点", "点数", "元素个数", "元素种类", "部分数", "角的数量", "数线", "数面", "数点"],
+  "判断推理/图形推理/位置类": ["位置规律", "平移", "旋转", "翻转", "顺时针", "逆时针", "移动"],
+  "判断推理/图形推理/样式类": ["加减同异", "求同", "求异", "叠加", "去同存异", "去异存同", "遍历", "黑白运算"],
+  "判断推理/图形推理/属性类": ["对称", "曲直", "开闭", "曲直性", "开闭性", "封闭图形", "开放图形"],
+  "判断推理/图形推理/空间重构（六面体）": ["六面体", "展开图", "折成", "相对面", "相邻面", "公共边"],
+  "判断推理/图形推理/空间重构（四面体）": ["四面体"], "判断推理/图形推理/六面体带线条": ["带线条", "线条方向"],
+  "判断推理/图形推理/截面图": ["截面"], "判断推理/图形推理/立体拼接": ["立体拼接", "拼合", "组成立体"], "判断推理/图形推理/平面拼接": ["平面拼接", "拼成"],
+  "判断推理/图形推理/功能元素": ["功能元素", "小黑点", "箭头"], "判断推理/图形推理/黑色块": ["黑块", "黑色块"], "判断推理/图形推理/黑白点": ["黑白点"],
+  "判断推理/图形推理/生活化的图形": ["生活化"], "判断推理/图形推理/汉字": ["汉字"],
+  "判断推理/逻辑判断/翻译推理": ["翻译题干", "翻译推理", "翻译为", "逆否", "肯前", "否后"],
+  "判断推理/逻辑判断/分析推理": ["分析推理", "排除法", "代入法", "列表", "对应关系", "最大信息"],
+  "判断推理/逻辑判断/集合推理": ["集合推理"],
+  "判断推理/逻辑判断/真假推理": ["真假推理", "真话", "假话", "矛盾关系", "反对关系", "一真", "一假"],
+  "判断推理/逻辑判断/论证（加强/削弱）": ["论点和论据", "论点", "论据", "削弱", "加强", "支持", "质疑", "搭桥", "补充论据", "前提", "因果倒置", "他因"],
+  "判断推理/逻辑判断/归纳推理": ["日常结论", "归纳推理", "可以推出", "能够推出", "结论题", "推出"],
+  "判断推理/逻辑判断/结构评价": ["结构相似", "结构评价", "推理结构", "评价"],
+  "判断推理/逻辑判断/原因解释": ["原因解释", "解释", "矛盾现象", "解释现象"],
+  "判断推理/逻辑判断/事件排序": ["事件排序", "先后顺序"],
+  "判断推理/类比推理/概念外延": ["外延", "并列", "包含", "种属", "组成", "交叉", "全同", "全异", "矛盾", "反对"],
+  "判断推理/类比推理/概念内涵": ["内涵", "属性", "功能", "材料", "必然", "或然"],
+  "判断推理/类比推理/词语语法": ["语法", "主谓", "动宾", "偏正", "并列结构", "词性"],
+  "判断推理/类比推理/词语语义": ["语义", "近义", "反义", "比喻义", "象征义"],
+  "判断推理/科学推理/力学": ["力学", "杠杆", "浮力", "压强", "摩擦", "惯性", "重力", "受力", "滑轮", "力矩", "弹力"],
+  "判断推理/科学推理/电磁学": ["电磁", "电流", "电压", "电路", "电阻", "磁场", "磁", "电"],
+  "判断推理/科学推理/光学与声学": ["光", "折射", "反射", "透镜", "声", "音调", "响度"],
+  "判断推理/科学推理/热学": ["热", "温度", "蒸发", "沸腾", "熔化", "凝固", "液化", "比热容", "导热"],
+  "判断推理/科学推理/化学与生物": ["化学", "生物", "反应", "细胞", "酸", "碱", "氧化"],
+  "言语理解与表达/片段阅读/主旨概括": ["主旨", "意在", "主要说明", "主要介绍", "主要讲", "概括", "总分", "分总", "中心", "重点", "主题词", "主体"],
+  "言语理解与表达/片段阅读/意图判断": ["意图"], "言语理解与表达/片段阅读/寓言故事": ["寓言"],
+  "言语理解与表达/片段阅读/标题选择": ["标题"], "言语理解与表达/片段阅读/态度判断": ["态度", "观点"],
+  "言语理解与表达/片段阅读/细节查找": ["细节", "符合文意", "不符合文意", "理解正确", "理解错误", "理解不正确", "错误定位", "偷换", "无中生有", "过于绝对", "绝对", "范围扩大", "张冠李戴", "时态", "原文"],
+  "言语理解与表达/片段阅读/词句理解": ["词句", "指代", "画线", "划线", "句子的理解", "指的是"],
+  "言语理解与表达/语句表达/语句排序": ["排序", "首句", "尾句", "捆绑", "相连", "连接", /[①-⑩]{2,}/g],
+  "言语理解与表达/语句表达/语句填空": ["横线", "填入", "填空", "承上启下", "衔接", "总结的作用", "起到", "最恰当的一句"],
+  "言语理解与表达/语句表达/下文推断": ["下文", "接下来", "后文", "承接", "引出"],
+  "言语理解与表达/逻辑填空": ["第一空", "第二空", "第三空", "空缺处", "依次填入", "填入划横线部分最恰当的一项", "填入画横线部分最恰当的一项"],
+  "言语理解与表达/逻辑填空/关联词（转折/递进/并列/因果）": ["关联词"],
+  "言语理解与表达/逻辑填空/空后解释": ["解释说明", "空后"], "言语理解与表达/逻辑填空/常用搭配": ["搭配", "固定搭配"],
+  "言语理解与表达/逻辑填空/限定信息": ["限定"], "言语理解与表达/逻辑填空/比喻": ["比喻"], "言语理解与表达/逻辑填空/后呼应": ["呼应", "前后对应"],
+  "言语理解与表达/逻辑填空/近义词辨析（义侧重/感情色彩/轻重）": ["辨析", "近义", "侧重", "感情色彩", "褒义", "贬义", "程度轻重"],
+  "言语理解与表达/逻辑填空/宏观结构": ["宏观结构", "结构分析"],
+  "数量关系/数字推理/多级数列": ["多级数列", "作差", "作和", "作商", "两两作差", "二级"],
+  "数量关系/数字推理/多重数列": ["多重数列", "交叉数列", "分组数列", "奇数项", "偶数项"],
+  "数量关系/数字推理/分数数列": ["分数数列", "分子", "分母"], "数量关系/数字推理/幂次数列": ["幂次", "平方", "立方", "次方"],
+  "数量关系/数字推理/递推数列": ["递推"], "数量关系/数字推理/图形数阵": ["数阵", "图形中的数", "九宫格"],
+  "数量关系/解题方法/倍数特性法": ["倍数特性", "整除"], "数量关系/解题方法/方程法": ["方程", "设"], "数量关系/解题方法/构造法": ["构造", "最多", "最少", "至少"],
+  "数量关系/题型/周期问题": ["周期", "星期", "循环"], "数量关系/题型/工程问题": ["工程", "效率", "工作量", "工作总量"],
+  "数量关系/题型/行程问题": ["行程", "速度", "相遇", "追及", "路程", "顺水", "逆水"], "数量关系/题型/排列组合": ["排列", "组合", "插空", "捆绑", "种方法", "种情况"],
+  "数量关系/题型/概率问题": ["概率"], "数量关系/题型/抽屉原理": ["抽屉", "保证", "最不利"], "数量关系/题型/容斥原理": ["容斥", "都不", "两者都"],
+  "数量关系/题型/等差、等比数列": ["等差", "等比", "公差", "公比"], "数量关系/题型/几何问题": ["几何", "面积", "体积", "周长", "三角形", "圆", "正方形", "长方形"],
+  "数量关系/题型/经济利润问题": ["利润", "成本", "售价", "定价", "折扣", "打折", "进价", "利润率"],
+  "常识判断/法律/宪法": ["宪法", "人民代表大会", "国家机构", "基本权利"],
+  "常识判断/法律/行政法": ["行政复议", "行政处罚", "行政许可", "行政诉讼", "行政强制", "行政机关", "行政法", "公务员法", "行政"],
+  "常识判断/法律/民法": ["民法典", "民事", "合同", "继承", "物权", "人格权", "婚姻", "侵权", "民法"],
+  "常识判断/法律/刑法": ["刑法", "犯罪", "刑事", "刑罚", "罪"], "常识判断/法律/法理学": ["法理", "法律渊源", "法律关系", "法的"],
+  "常识判断/科技/科技史": ["发明", "科学家", "科技史", "发现了"], "常识判断/科技/物理": ["物理", "杠杆", "电流", "电压", "浮力", "压强", "惯性", "摩擦", "天平", "电路", "轮轴", "折射", "反射", "力臂"],
+  "常识判断/科技/化学": ["化学", "碘", "醋酸", "碱", "氧化", "有机", "化合物", "混合物", "元素", "分子"],
+  "常识判断/科技/生物": ["生物", "细胞", "基因", "DNA", "蛋白质", "植物", "动物", "激素", "维生素"],
+  "常识判断/科技/医学": ["疾病", "医学", "病毒", "疫苗", "药物", "免疫"], "常识判断/科技/生活常识": ["生活常识", "生活中"],
+  "常识判断/科技/高新技术": ["卫星", "火箭", "航天", "神舟", "量子", "芯片", "人工智能", "北斗", "嫦娥", "天宫", "空间站", "5G", "载人", "探测器"],
+  "常识判断/历史/党的诞生和国民大革命": ["北伐", "国民革命", "中共一大", "五四", "国共合作", "黄埔"],
+  "常识判断/历史/土地革命": ["土地革命", "长征", "遵义会议", "井冈山", "南昌起义", "秋收起义"],
+  "常识判断/历史/抗日战争": ["抗日", "抗战", "七七事变", "九一八"], "常识判断/历史/解放战争": ["解放战争", "三大战役", "辽沈", "淮海", "平津"],
+  "常识判断/历史/近代史": ["鸦片战争", "洋务", "戊戌", "辛亥", "甲午", "太平天国"], "常识判断/历史/古代变法与改革": ["变法", "改革"],
+  "常识判断/历史/古代战役": ["战役", "之战"], "常识判断/历史/中国古代盛世": ["盛世", "之治"], "常识判断/历史/考古文化遗址": ["遗址", "考古"],
+  "常识判断/文化/古代思想": ["儒家", "道家", "法家", "墨家", "孔子", "孟子", "老子", "庄子", "荀子", "韩非"],
+  "常识判断/文化/传统节日": ["节日", "春节", "端午", "中秋", "重阳", "清明", "七夕", "元宵"],
+  "常识判断/文化/古代科技成就": ["天工开物", "四大发明", "九章算术", "梦溪笔谈"], "常识判断/文化/古代医学": ["中医", "本草", "黄帝内经", "华佗", "伤寒"],
+  "常识判断/文化/古代建筑": ["建筑", "宫殿", "园林", "长城"], "常识判断/文化/汉字与书法": ["汉字", "书法"], "常识判断/文化/古代绘画": ["绘画", "画作"],
+  "常识判断/文化/古代戏曲": ["戏曲", "京剧", "昆曲", "杂剧"], "常识判断/文化/古代称谓": ["称谓", "谦称", "敬称"],
+  "常识判断/文学/先秦诗歌": ["诗经", "楚辞", "屈原", "先秦"], "常识判断/文学/魏晋诗歌": ["魏晋", "陶渊明", "曹操", "曹植"],
+  "常识判断/文学/唐宋八大家": ["唐宋八大家", "韩愈", "柳宗元", "欧阳修", "苏洵", "苏辙", "曾巩", "王安石"],
+  "常识判断/文学/唐诗": ["唐代", "唐诗", "李白", "杜甫", "岑参", "王维", "白居易", "王昌龄", "李商隐", "杜牧"],
+  "常识判断/文学/宋词": ["宋代", "宋词", "苏轼", "陆游", "辛弃疾", "李清照", "柳永"],
+  "常识判断/文学/元曲": ["元曲", "关汉卿", "马致远"], "常识判断/文学/古代小说": ["小说", "红楼梦", "水浒", "三国演义", "西游记", "聊斋"],
+  "常识判断/文学/史学著作": ["史记", "资治通鉴", "汉书", "春秋", "史书"],
+  "常识判断/地理/中国的地势与地形": ["地势", "地形", "地貌", "高原", "盆地", "平原", "冻土"], "常识判断/地理/中国的河流和湖泊": ["河流", "湖泊", "长江", "黄河", "湿地"],
+  "常识判断/地理/二十四节气": ["节气"], "常识判断/地理/气象灾害": ["台风", "寒潮", "干旱", "洪涝", "沙尘暴"], "常识判断/地理/降水的类型": ["降水", "降雨"],
+  "常识判断/经济/通货膨胀": ["通货膨胀", "通胀", "物价"], "常识判断/经济/宏观调控手段": ["宏观调控", "货币政策", "财政政策"], "常识判断/经济/汇率": ["汇率", "升值", "贬值"],
+  "政治理论/马克思主义哲学/唯物辩证法": ["量变", "质变", "矛盾", "辩证", "联系", "否定之否定", "发展的"],
+  "政治理论/马克思主义哲学/唯物论": ["物质", "意识", "主观能动", "客观规律"], "政治理论/马克思主义哲学/认识论": ["实践", "认识", "真理"],
+  "政治理论/马克思主义哲学/唯物史观": ["生产力", "生产关系", "人民群众", "社会存在", "社会意识", "上层建筑", "经济基础"],
+  "政治理论/马克思主义哲学/哲学基本问题与两大派别": ["唯心主义", "唯物主义", "思维和存在"],
+  "政治理论/马克思主义政治经济学/商品二因素": ["使用价值", "商品"], "政治理论/马克思主义政治经济学/货币的本质与职能": ["货币"], "政治理论/马克思主义政治经济学/剩余价值与资本": ["剩余价值", "资本"],
+  "政治理论/新思想/总论": ["新时代", "二十大", "中国式现代化", "初级阶段", "主要矛盾", "十年"],
+  "政治理论/新思想/党的全面领导": ["党的领导", "全面领导", "两个确立", "两个维护"], "政治理论/新思想/以人民为中心与共同富裕": ["共同富裕", "人民为中心", "收入"],
+  "政治理论/新思想/全面深化改革": ["深化改革", "改革"], "政治理论/新思想/推动高质量发展": ["高质量发展", "新发展理念", "新质生产力", "新发展格局", "开放", "产业"],
+  "政治理论/新思想/教育、科技、人才强国": ["教育", "科技创新", "人才", "创新"], "政治理论/新思想/全过程人民民主与统一战线": ["民主", "统一战线", "人民代表大会"],
+  "政治理论/新思想/全面依法治国": ["法治", "依法治国"], "政治理论/新思想/社会主义文化强国": ["文化强国", "文化自信", "文化"],
+  "政治理论/新思想/保障和改善民生": ["民生", "就业", "社会保障", "医疗", "养老"], "政治理论/新思想/生态文明": ["生态", "绿色", "碳达峰", "碳中和", "环境"],
+  "政治理论/新思想/总体国家安全观": ["国家安全", "政治安全", "总体国家安全观"], "政治理论/新思想/国防和军队建设": ["国防", "军队", "强军"],
+  "政治理论/新思想/“一国两制”与祖国统一": ["一国两制", "台湾", "香港", "澳门", "祖国统一"], "政治理论/新思想/中国特色大国外交": ["外交", "一带一路", "人类命运共同体", "全球"],
+  "政治理论/新思想/党的建设与全面从严治党": ["党的建设", "从严治党", "自我革命", "党风廉政", "纪律"],
+};
+const KPHINT = [[/政治常识|政治理论|时政|时事/, ["政治理论"]], [/法律常识|法律/, ["常识判断/法律"]], [/科技常识|科技/, ["常识判断/科技"]], [/人文常识|人文|历史常识|文学常识|文化常识/, ["常识判断/历史", "常识判断/文化", "常识判断/文学"]], [/地理/, ["常识判断/地理"]], [/经济常识|经济/, ["常识判断/经济"]]];
+function kpKeywords(n) {
+  if (KPKW[n.path]) return KPKW[n.path];
+  if (n.depth === 0) return [];
+  return n.name.split(/[（）()、/与和]/).filter(x => x.length >= 2);
+}
+function countIn(s, k) {
+  if (k instanceof RegExp) return Math.min(3, (s.match(k) || []).length);
+  let c = 0, i = 0; while (c < 3 && (i = s.indexOf(k, i)) >= 0) { c++; i += k.length; } return c;
+}
+function autoKp(q) {
+  const roots = rootsFor(q.module); if (!roots.length) return null;
+  const nodes = kpUnder(roots).map(p => KP.all.get(p));
+  if (nodes.length === 1 || (roots.length === 1 && !roots[0].children.length)) return { path: roots[0].path, score: 99 };
+  const ana = (q.analysis || "").replace(/\s+/g, " ").replace(/^(正确答案(是|为)?[:：]?\s*[A-D]|【答案】\s*[A-D]|故正确答案为[A-D]。?)\s*/, "");
+  const head = ana.slice(0, 160), rest = ana.slice(160, 1500) + " " + (q.text || "").replace(/\s+/g, " ").slice(0, 600);
+  const fm = head.match(/(?:考查|考察|本题为|判定本题为|本题是|属于)([^。；，,：:\s]{2,14})/g) || [];
+  const focus = fm.join(" ");
+  let hint = null; const hm = head.match(/(?:考查|考察)([^。；，,]{2,8})/); if (hm) for (const [re, ps] of KPHINT) if (re.test(hm[1])) { hint = ps; break; }
+  if (/资料分析/.test(q.module || "") && (ana.match(/[ABCD]项/g) || []).length >= 3) return null; // 综合分析题交给 AI
+  const own = new Map();
+  for (const n of nodes) {
+    let s = 0; for (const k of kpKeywords(n)) { const w = k instanceof RegExp ? 2 : k.length >= 3 ? 2 : k.length === 2 ? 1 : 0.5; s += w * (8 * countIn(focus, k) + 3 * countIn(head, k) + countIn(rest, k)); }
+    if (hint) s *= hint.some(h => n.path === h || n.path.startsWith(h + "/")) ? 1.5 : 0.4;
+    own.set(n.path, s);
+  }
+  let best = null;
+  for (const n of nodes) { const s = own.get(n.path) + 0.5 * (own.get(n.parent?.path) || 0); if (!best || s > best.score + 1e-9 || (Math.abs(s - best.score) < 1e-9 && n.depth > best.depth)) best = { path: n.path, score: s, depth: n.depth }; }
+  if (best && best.score >= 6) return best;
+  if (hint) return { path: hint[0], score: 1 };
+  return null;
+}
+/* apply rule tags to every question that the user / AI has not tagged; returns number changed */
+function autoTagAll(pid) {
+  let n = 0;
+  for (const q of D.questions.values()) {
+    if (pid && q.pid !== pid) continue;
+    const s = qs(q.id); if (s.kpBy === "user" || s.kpBy === "ai") continue;
+    if (!s.kpBy && (s.kp || []).length) continue; // tags chosen by hand before auto-tagging existed
+    const r = autoKp(q); if (!r) continue;
+    if ((s.kp || []).length === 1 && s.kp[0] === r.path) continue;
+    const cur = { ...s, id: q.id, kp: [r.path], kpBy: "rule" }; D.qstate.set(q.id, cur); queueWrite("qstate", q.id, cur); n++;
+  }
+  return n;
+}
+const kpByLabel = s => !(s.kp || []).length ? "" : s.kpBy === "rule" ? "按解析自动识别" : s.kpBy === "ai" ? "AI 判断" : "";
+/* AI tagging in batches of 8; only touches questions not chosen by hand */
+async function aiTagMany(list, onProg) {
+  if (!S.sample) throw { code: "unavailable" };
+  const groups = new Map(); for (const q of list) { const k = (MOD_ROOTS[q.module] || ["*"]).join("|"); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(q); }
+  let done = 0, got = 0; const total = list.length;
+  for (const arr of groups.values()) for (let i = 0; i < arr.length; i += 8) {
+    const chunk = arr.slice(i, i + 8); const cands = kpUnder(rootsFor(chunk[0].module)).filter(p => p.includes("/") || rootsFor(chunk[0].module).length > 1);
+    const prompt = `你在帮一名备考公务员行测的考生给题目归类知识点。
+对下面每道题，从“候选知识点”中选出 1 个最具体、最贴切的知识点（确实跨两个知识点时可以选 2 个）。必须原样复制候选列表里的完整路径（用 / 分隔），不要自己编。解析开头通常会写“本题考查……”“可判定本题为……问题”，优先参考。
+只输出 JSON：{"items": [{"id": 题目编号, "kp": ["完整路径"]}]}
+
+候选知识点：
+${cands.join("\n")}
+
+${chunk.map((q, j) => `【题目编号 ${j + 1}】模块：${q.module || "未知"}
+题目（OCR 文字，可能有错字）：${(q.text || "").replace(/\s+/g, " ").slice(0, 320)}
+答案：${q.answer || "未知"}
+解析：${(q.analysis || "无").replace(/\s+/g, " ").slice(0, 520)}`).join("\n\n")}`;
+    const res = await S.sample.json(prompt, { modelTier: "quick" });
+    for (const it of (Array.isArray(res?.items) ? res.items : [])) {
+      const q = chunk[(+it.id || 0) - 1]; if (!q) continue;
+      const picked = (Array.isArray(it.kp) ? it.kp : [it.kp]).map(x => String(x || "").trim()).filter(x => KP.all.has(x)).slice(0, 2);
+      if (!picked.length) continue; const s = qs(q.id); if (s.kpBy === "user") continue;
+      const cur = { ...s, id: q.id, kp: picked, kpBy: "ai" }; D.qstate.set(q.id, cur); queueWrite("qstate", q.id, cur); got++;
+    }
+    done += chunk.length; onProg?.(done, total);
+  }
+  return got;
+}
+/* questions that appear in finished attempts */
+function practicedQs() { const ids = new Set(); D.attempts.forEach(a => { if (a.finishedAt) a.qids.forEach(id => ids.add(id)); }); return [...ids].map(id => D.questions.get(id)).filter(Boolean); }
 
 /* =====================================================================
    PDF reading & question detection
@@ -994,21 +1202,53 @@ async function pdfFullText(pdf, onStep) {
   const pages = [];
   for (let i = 1; i <= pdf.numPages; i++) pages.push(await pageLines(await pdf.getPage(i)));
   if (pages.filter(p => p.lines.length >= 3).length < pdf.numPages * 0.5) await ocrPages(pdf, pages, { label: "答案", onStep });
-  let txt = "";
-  for (const p of pages) {
+  let txt = ""; const map = [];
+  pages.forEach((p, pi) => {
     const rights = p.lines.map(l => l.x1).sort((a, b) => a - b); const maxR = rights.length ? rights[Math.floor(rights.length * 0.9)] : p.w;
     for (const l of p.lines) {
       if (l.top / p.h < 0.03 || l.y / p.h > 0.975) continue;
+      map.push({ off: txt.length, page: pi, line: l });
       txt += l.text.replace(/(?<=[一-鿿，。、；：“”（）])\s+(?=[一-鿿，。、；：“”（）])/g, "");
       txt += (l.x1 >= maxR - p.w * 0.03 && !/[。！？：:”]$/.test(l.c)) ? "" : "\n";
     }
     txt += "\n";
+  });
+  return { pages, txt, map };
+}
+/* Split an answer-explanation text into per-question blocks.
+   Pass 1 takes lines like "12.【答案】…" / "12.正确答案是…" (strong starts).
+   Pass 2 fills the gaps with plain "13.…" line starts, accepting only the next expected number,
+   so numbered sub-points inside one explanation are not mistaken for new questions. */
+function splitAnalysis(T) {
+  const cands = [];
+  const reAny = /(^|\n)[ \t]*(\d{1,3})\s*[.．、](?!\d)/g; let m;
+  while ((m = reAny.exec(T))) {
+    const at = m.index + m[1].length, after = T.slice(reAny.lastIndex, reAny.lastIndex + 12).replace(/^\s+/, "");
+    cands.push({ n: +m[2], at, strong: /^(【|答案|正确答案|故正确答案|〔|\[答案|解析)/.test(after) });
   }
-  return { pages, txt };
+  const strongNums = new Set(cands.filter(c => c.strong).map(c => c.n));
+  const starts = []; let lastN = 0;
+  for (const c of cands) {
+    if (c.n <= lastN) continue;
+    const ok = lastN === 0 ? (c.strong || (c.n <= 3 && !strongNums.has(c.n))) : c.strong ? c.n <= lastN + 6 : (c.n === lastN + 1 && !strongNums.has(c.n));
+    if (ok) { starts.push(c); lastN = c.n; }
+  }
+  const blocks = starts.map((s, i) => {
+    let b = T.slice(s.at, i + 1 < starts.length ? starts[i + 1].at : T.length);
+    const cut = b.search(/\n\s*(第[二三四]部分|主观题|申论)/); if (cut > 0) b = b.slice(0, cut);
+    return b;
+  });
+  return { starts, blocks };
+}
+function blockAnswer(block) {
+  const a = block.match(/【答案】\s*([A-D])/) || block.match(/\[答案\]\s*([A-D])/) || block.match(/(?:正确答案|答案)\s*(?:为|是|选)?\s*[：:]?\s*([A-D])(?![A-Za-z])/);
+  if (a) return a[1];
+  const lead = block.replace(/^\s*\d{1,3}\s*[.．、]\s*/, "").match(/^([A-D])(?!项|选项|[、.．,，:：])/);
+  return lead ? lead[1] : null;
 }
 function parseAnswers(txt) {
   const T = toHalf(txt);
-  const ans = {}, ana = {};
+  const ans = {}, ana = {}, spans = {};
   for (const m of T.matchAll(/(\d{1,3})\s*[-—–~～]\s*(\d{1,3})\s*[：:.、]?\s*([A-D](?:\s?[A-D]){1,9})(?![A-Za-z])/g)) {
     const a = +m[1], letters = m[3].replace(/\s/g, "");
     [...letters].forEach((ch, i) => { if (!ans[a + i]) ans[a + i] = ch; });
@@ -1017,20 +1257,53 @@ function parseAnswers(txt) {
     const ms = [...line.matchAll(/(\d{1,3})\s*[.．、:：]\s*([A-D])(?![A-Za-z一-鿿])/g)];
     if (ms.length >= 3) ms.forEach(m => { if (!ans[+m[1]]) ans[+m[1]] = m[2]; });
   }
-  const starts = [];
-  const re = /(^|\n)[ \t]*(\d{1,3})\s*[.．、]\s*(?=【|答案|正确答案|〔|\[答案|解析)/g;
-  let m, lastN = 0;
-  while ((m = re.exec(T))) { const n = +m[2]; if (n > lastN && n <= lastN + 6) { starts.push({ n, at: m.index + m[1].length }); lastN = n; } }
+  const { starts, blocks } = splitAnalysis(T);
   starts.forEach((s, i) => {
-    let block = T.slice(s.at, i + 1 < starts.length ? starts[i + 1].at : T.length);
-    const cut = block.search(/\n\s*(第[二三四]部分|主观题|申论)/); if (cut > 0) block = block.slice(0, cut);
-    const a = block.match(/【答案】\s*([A-D])/) || block.match(/\[答案\]\s*([A-D])/);
-    let letter = a && a[1];
-    if (!letter) { const all = [...block.matchAll(/(?:正确答案|答案)\s*(?:为|是|选|：|:)?\s*([A-D])(?![A-Za-z])/g)]; if (all.length) letter = all[all.length - 1][1]; }
+    const block = blocks[i];
+    const letter = blockAnswer(block);
     if (letter) ans[s.n] = letter;
     ana[s.n] = block.replace(/^\s*\d{1,3}\s*[.．、]\s*/, "").replace(/\n{3,}/g, "\n\n").trim();
+    spans[s.n] = [s.at, s.at + block.replace(/\s+$/, "").length];
   });
-  return { ans, ana };
+  return { ans, ana, spans };
+}
+
+/* ---------- analysis screenshots (keep formulas that text extraction loses) ---------- */
+const ANA_IMG_MOD = m => /资料|综合分析|数量|数字|数学|图形/.test(m || "");
+function anaRegions(pages, map, spans) {
+  const lineAt = off => { let lo = 0, hi = map.length - 1, r = 0; while (lo <= hi) { const mid = (lo + hi) >> 1; if (map[mid].off <= off) { r = mid; lo = mid + 1; } else hi = mid - 1; } return r; };
+  const body = pi => map.filter(m => m.page === pi);
+  const out = {};
+  for (const [n, [a, b]] of Object.entries(spans)) {
+    if (!map.length) continue;
+    const i0 = lineAt(a), i1 = lineAt(Math.max(a, b - 1)); const s0 = map[i0], s1 = map[i1], next = map[i1 + 1];
+    const slices = [];
+    for (let pi = s0.page; pi <= s1.page; pi++) {
+      const P = pages[pi], ls = body(pi); if (!ls.length) continue;
+      const x0 = Math.max(0, Math.min(...ls.map(m => m.line.x0)) - 8), x1 = Math.min(P.w, Math.max(...ls.map(m => m.line.x1)) + 8);
+      const top = pi === s0.page ? s0.line.top - 4 : ls[0].line.top - 4;
+      let bot; if (pi === s1.page) bot = next && next.page === pi ? next.line.top - 2 : Math.min(P.h * 0.975, ls[ls.length - 1].line.y + P.h * 0.12); else bot = P.h * 0.975;
+      if (bot - top > 4) slices.push({ page: pi, top: Math.max(0, top), bot: Math.min(P.h, bot), x0, x1 });
+    }
+    if (slices.length) out[n] = slices;
+  }
+  return out;
+}
+async function cropAnalyses(pdf, regions, ns, onProg) {
+  const SC = 2, byPage = new Map(), parts = {};
+  for (const n of ns) (regions[n] || []).forEach((sl, idx) => { if (!byPage.has(sl.page)) byPage.set(sl.page, []); byPage.get(sl.page).push({ n, idx, sl }); parts[n] ||= []; });
+  let k = 0;
+  for (const [pg, list] of [...byPage.entries()].sort((a, b) => a[0] - b[0])) {
+    const full = await renderPageCanvas(await pdf.getPage(pg + 1), SC);
+    for (const { n, idx, sl } of list) {
+      const c = document.createElement("canvas"); c.width = Math.ceil((sl.x1 - sl.x0) * SC); c.height = Math.max(4, Math.ceil((sl.bot - sl.top) * SC));
+      const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(full, -Math.floor(sl.x0 * SC), -Math.floor(sl.top * SC));
+      parts[n][idx] = await toJpeg(trimBottom(c), 0.8);
+    }
+    full.width = full.height = 0; onProg?.(++k, byPage.size);
+  }
+  const out = {}; for (const n of Object.keys(parts)) { const ps = parts[n].filter(Boolean); if (ps.length) out[n] = await stitch(ps); }
+  return out;
 }
 
 /* =====================================================================
@@ -1098,6 +1371,7 @@ function vHome() {
         ${st.draft ? `<button class="btn primary" data-act="resume" data-id="${st.draft.id}">继续做题</button>` : `<button class="btn primary" data-act="start" data-id="${p.id}">开始做题</button>`}
         ${last ? `<button class="btn" data-act="report" data-id="${last.id}">报告</button>` : ""}
         <button class="btn" data-act="paperReview" data-id="${p.id}">看题与解析</button>
+        <button class="btn ghost sm" data-act="reAns" data-id="${p.id}" title="重新上传答案解析 PDF，重新拆分每题的解析">更新答案解析</button>
         <button class="btn ghost danger sm" data-act="delPaper" data-id="${p.id}">删除</button>
       </div>
     </article>`;
@@ -1128,8 +1402,8 @@ afterRender.home = () => {
 };
 
 /* ---------- Import ---------- */
-const IMP = { step: 1, paperFile: null, ansFile: null, title: "", pdf: null, pages: null, st: null, ans: {}, ana: {}, tool: "q", busy: "", prog: 0, previews: [] };
-function resetImport() { Object.assign(IMP, { step: 1, paperFile: null, ansFile: null, title: "", pdf: null, pages: null, st: null, ans: {}, ana: {}, tool: "q", busy: "", prog: 0, previews: [] }); }
+const IMP = { step: 1, paperFile: null, ansFile: null, title: "", pdf: null, pages: null, st: null, ans: {}, ana: {}, anaReg: null, ansPdf: null, tool: "q", busy: "", prog: 0, previews: [] };
+function resetImport() { Object.assign(IMP, { step: 1, paperFile: null, ansFile: null, title: "", pdf: null, pages: null, st: null, ans: {}, ana: {}, anaReg: null, ansPdf: null, tool: "q", busy: "", prog: 0, previews: [] }); }
 function vImport() {
   if (IMP.step === 1) return `
   <div class="row"><button class="btn ghost" data-act="nav" data-v="home">← 返回</button><h2 class="grow" style="font-family:var(--f-display)">导入试卷</h2></div>
@@ -1245,10 +1519,11 @@ async function impAnalyze() {
     IMP.st.firstNum = firstQ ? firstQ.num : 1;
     IMP.st.template = "";
     for (const t of TEMPLATES) if (t.mods.length === IMP.st.modules.length && t.mods.every((m, i) => m[0] === IMP.st.modules[i].name)) { IMP.st.template = t.id; IMP.st.modules.forEach((m, i) => { m.pts = t.mods[i][2] ?? null; m.min = t.mods[i][3] ?? null; }); break; }
-    IMP.ans = {}; IMP.ana = {};
+    IMP.ans = {}; IMP.ana = {}; IMP.anaReg = null; IMP.ansPdf = null;
     if (IMP.ansFile) {
       IMP.busy = "正在读取答案…"; setImpProgress();
-      const apdf = await openPdf(IMP.ansFile); const { txt } = await pdfFullText(apdf, step); const r = parseAnswers(txt); IMP.ans = r.ans; IMP.ana = r.ana;
+      const apdf = await openPdf(IMP.ansFile); const { txt, pages: apages, map } = await pdfFullText(apdf, step); const r = parseAnswers(txt); IMP.ans = r.ans; IMP.ana = r.ana;
+      try { IMP.anaReg = anaRegions(apages, map, r.spans); IMP.ansPdf = apdf; } catch (e) { console.warn(e); IMP.anaReg = null; }
     }
     IMP.busy = ""; IMP.step = 2; IMP.previews = []; render();
   } catch (e) { console.error(e); IMP.busy = ""; render(); toast("读取失败：" + e.message); }
@@ -1278,17 +1553,26 @@ async function impCommit() {
     const refs = {}; const keys = Object.keys(pieces); let up = 0;
     IMP.busy = S.assets ? "正在上传图片…" : "正在保存图片…";
     for (const k of keys) { const parts = pieces[k].filter(Boolean); refs[k] = parts.length ? await putImage(await stitch(parts)) : null; up++; IMP.prog = 55 + Math.round(up / keys.length * 35); setImpProgress(); }
+    const anaRefs = {};
+    if (IMP.anaReg && IMP.ansPdf) try {
+      const want = R.qs.filter(q => ANA_IMG_MOD(q.mod) && IMP.anaReg[q.n]).map(q => q.n);
+      if (want.length) {
+        IMP.busy = "正在截取资料分析等题的解析原图…"; setImpProgress();
+        const blobs = await cropAnalyses(IMP.ansPdf, IMP.anaReg, want);
+        for (const n of Object.keys(blobs)) anaRefs[n] = await putImage(blobs[n]);
+      }
+    } catch (e) { console.warn("解析截图失败", e); }
     IMP.busy = "正在写入题目…"; setImpProgress();
     const modules = [...st.modules].sort((a, b) => a.from - b.from).map(m => ({ name: m.name, from: m.from, pts: m.pts ?? null, min: m.min ?? null }));
     let answered = 0;
     for (const q of R.qs) {
       const id = pid + "-" + pad3(q.n); const answer = IMP.ans[q.n] || ""; if (answer) answered++;
-      const doc = { pid, n: q.n, module: q.mod, img: refs["q" + q.n], mat: q.mat ? refs[q.mat] : null, matKey: q.mat ? pid + q.mat : null, answer, analysis: (IMP.ana[q.n] || "").slice(0, 20000), text: regionText(IMP.pages, q.slices), createdAt: Date.now() };
+      const doc = { pid, n: q.n, module: q.mod, img: refs["q" + q.n], mat: q.mat ? refs[q.mat] : null, matKey: q.mat ? pid + q.mat : null, answer, analysis: (IMP.ana[q.n] || "").slice(0, 20000), anaImg: anaRefs[q.n] || null, text: regionText(IMP.pages, q.slices), createdAt: Date.now() };
       await dbPut("questions", id, doc); D.questions.set(id, { id, ...doc });
     }
     const paper = { title: IMP.title, createdAt: Date.now(), qCount: R.qs.length, modules, answered, first: R.qs[0]?.n || 1, template: st.template || "" };
     await dbPut("papers", pid, paper); D.papers.unshift({ id: pid, ...paper });
-    IMP.prog = 100; toast(`已导入 ${R.qs.length} 道题`);
+    IMP.prog = 100; try { autoTagAll(pid); } catch (e) { console.warn(e); } toast(`已导入 ${R.qs.length} 道题`);
     resetImport(); go("home");
   } catch (e) { console.error(e); IMP.busy = ""; render(); toast("导入失败：" + e.message, 5000); }
 }
@@ -1304,7 +1588,7 @@ async function startAttempt({ pid = null, qids, title, mode }) {
   D.attempts.unshift(a); await dbPut("attempts", a.id, a); openPractice(a);
 }
 function openPractice(a) {
-  P = { a, enter: Date.now(), tick: null, ink: false, inkTool: "pen", saveT: null };
+  P = { a, enter: Date.now(), tick: null, ink: true, inkTool: "pen", saveT: null };
   $("#topbar").hidden = true; document.body.style.overflow = "hidden";
   renderPractice();
   P.tick = setInterval(() => { const el = $("#pTimer"); if (el) el.textContent = fmtT(curElapsed()); }, 1000);
@@ -1319,7 +1603,9 @@ function renderPractice() {
   const a = P.a, qid = a.qids[a.cur], q = D.questions.get(qid) || {}, r = a.answers[qid] || {};
   const hasMat = !!q.mat;
   const ov = $("#overlay");
-  ov.innerHTML = `<div class="prac" role="dialog" aria-label="做题">
+  const prevPane = $("#matpane"); if (prevPane) P.matScroll = { key: P.matKey, top: prevPane.scrollTop };
+  P.matKey = hasMat ? (q.matKey || q.mat) : null;
+  ov.innerHTML = `<div class="prac ${P.ink ? "inking" : ""}" role="dialog" aria-label="做题">
     <div class="prac-top">
       <button class="ico" data-act="pExit" aria-label="退出（进度会保存）">${ICON.close}</button>
       <span class="timer" id="pTimer">${ICON.clock}${fmtT(curElapsed())}</span>
@@ -1331,15 +1617,15 @@ function renderPractice() {
       <button class="btn primary sm" data-act="pSubmit">交卷</button>
     </div>
     <div class="prac-body ${hasMat ? "has-mat" : ""}">
-      ${hasMat ? `<div class="matpane"><div class="lbl"><span>材料</span><span>${esc(q.module || "")}</span></div><img class="qimg" data-ref="${esc(q.mat)}" alt="材料"></div>` : ""}
+      ${hasMat ? `<div class="matpane" id="matpane"><div class="matbody" id="matbody"><div class="lbl"><span>材料${P.ink ? " · 可直接在材料上圈画，同一材料下的小题共用" : ""}</span><span>${esc(q.module || "")}</span></div><img class="qimg" data-ref="${esc(q.mat)}" alt="材料"></div><canvas class="ink ${P.ink ? "on" : ""}" id="matInk"></canvas></div>` : ""}
       <div class="qpane" id="qpane">
         <div class="qsheet" id="qsheet">
           <div class="qmeta"><span class="chip acc">${esc(q.module || "未分类")}</span><span class="small faint">${esc(qLabel(q))}</span></div>
           ${q.img ? `<img class="qimg" data-ref="${esc(q.img)}" alt="第${q.n}题">` : `<div class="empty">这道题没有图片</div>`}
           <div class="opts" role="group" aria-label="选择答案">${["A", "B", "C", "D"].map(L => `<button class="opt" data-act="pPick" data-l="${L}" aria-pressed="${r.c === L}">${L}</button>`).join("")}</div>
-          ${P.ink ? `<div class="scratch small faint" aria-hidden="true">草稿区</div>` : ""}
-          <canvas class="ink ${P.ink ? "on" : ""}" id="inkCv"></canvas>
+          ${P.ink ? `<div class="scratch small faint" aria-hidden="true">草稿区 · 单指或笔书写，双指滑动翻看</div>` : ""}
         </div>
+        <canvas class="ink ${P.ink ? "on" : ""}" id="inkCv"></canvas>
         ${P.ink ? `<div class="inkbar" role="toolbar" aria-label="画板工具">
           <button class="ico" data-act="inkTool" data-t="pen" aria-pressed="${P.inkTool === "pen"}" aria-label="笔">${ICON.pen}</button>
           <button class="ico" data-act="inkTool" data-t="eraser" aria-pressed="${P.inkTool === "eraser"}" aria-label="橡皮">${ICON.eraser}</button>
@@ -1350,39 +1636,73 @@ function renderPractice() {
     </div>
     <div class="prac-foot"><button class="btn" data-act="pPrev" ${a.cur === 0 ? "disabled" : ""}>上一题</button><button class="btn ${a.cur === a.qids.length - 1 ? "primary" : ""}" data-act="${a.cur === a.qids.length - 1 ? "pSubmit" : "pNext"}">${a.cur === a.qids.length - 1 ? "交卷" : "下一题"}</button></div>
   </div>`;
-  $$("#qsheet img", ov).forEach(im => im.addEventListener("load", setupInk));
+  $$("#qsheet img, #matbody img", ov).forEach(im => im.addEventListener("load", setupInk));
   hydrate(ov);
   setupInk(); drawMemo();
 }
-function setupInk() {
-  const cv = $("#inkCv"), sheet = $("#qsheet"); if (!cv || !sheet) return;
-  const qid = P.a.qids[P.a.cur]; const strokes = INK.get(qid) || []; INK.set(qid, strokes);
-  const dpr = window.devicePixelRatio || 1; const w = sheet.clientWidth, h = sheet.scrollHeight;
+function attachInk(cv, pane, content, strokes) {
+  if (!cv || !pane || !content) return null;
+  const dpr = window.devicePixelRatio || 1;
+  const w = pane.clientWidth, h = Math.max(content.offsetTop + content.offsetHeight + 16, pane.clientHeight);
   cv.style.width = w + "px"; cv.style.height = h + "px"; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
   const ctx = cv.getContext("2d"); ctx.scale(dpr, dpr);
   const inkColor = getComputedStyle(document.documentElement).getPropertyValue("--bad").trim() || "#c43d2b";
-  const redraw = () => {
-    ctx.clearRect(0, 0, w, h);
-    for (const s of strokes) { if (s.pts.length < 1) continue; ctx.globalCompositeOperation = s.er ? "destination-out" : "source-over"; ctx.strokeStyle = inkColor; ctx.lineWidth = s.er ? 22 : 2.2; ctx.lineCap = ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(s.pts[0][0], s.pts[0][1]); for (const p of s.pts) ctx.lineTo(p[0], p[1]); ctx.stroke(); }
-    ctx.globalCompositeOperation = "source-over";
+  const drawStroke = s => {
+    if (!s.pts.length) return;
+    ctx.globalCompositeOperation = s.er ? "destination-out" : "source-over"; ctx.strokeStyle = inkColor; ctx.lineCap = ctx.lineJoin = "round";
+    if (s.pts.length === 1) { const [x, y, pr] = s.pts[0]; ctx.beginPath(); ctx.arc(x, y, s.er ? 11 : 1.2 + (pr ?? 0.5) * 1.6, 0, Math.PI * 2); ctx.fillStyle = inkColor; ctx.fill(); return; }
+    for (let i = 1; i < s.pts.length; i++) { const a = s.pts[i - 1], b = s.pts[i]; ctx.lineWidth = s.er ? 22 : 1.4 + (b[2] ?? 0.5) * 2.2; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
   };
-  redraw(); P.redrawInk = redraw;
-  if (!P.ink) return;
-  const pane = $("#qpane"); let cur = null, penSeen = P.penSeen || false, lastY = 0;
-  const pos = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  const redraw = () => { ctx.clearRect(0, 0, w, h); strokes.forEach(drawStroke); ctx.globalCompositeOperation = "source-over"; };
+  redraw();
+  if (!P.ink) return redraw;
+  const touches = new Map(); let cur = null, curId = null, panPrev = null;
+  const pos = e => { const r = cv.getBoundingClientRect(); const pr = e.pointerType === "pen" ? (e.pressure || 0.5) : 0.5; return [e.clientX - r.left, e.clientY - r.top, pr]; };
+  const centroid = () => { let x = 0, y = 0; touches.forEach(t => { x += t.x; y += t.y; }); return { x: x / touches.size, y: y / touches.size }; };
+  const endStroke = () => { cur = null; curId = null; };
   cv.onpointerdown = e => {
-    if (e.pointerType === "pen") P.penSeen = penSeen = true;
-    if (e.pointerType === "touch" && penSeen) { lastY = e.clientY; cv.setPointerCapture(e.pointerId); cur = { scroll: true }; return; }
-    cv.setPointerCapture(e.pointerId); cur = { er: P.inkTool === "eraser", pts: [pos(e)] }; strokes.push(cur); e.preventDefault();
+    e.preventDefault(); cv.setPointerCapture(e.pointerId);
+    if (e.pointerType === "pen") P.penSeen = true;
+    if (e.pointerType === "touch") {
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touches.size >= 2) {
+        if (cur && cur.byTouch) { const i = strokes.indexOf(cur); if (i >= 0) strokes.splice(i, 1); const hi = P.inkHist.lastIndexOf(strokes); if (hi >= 0) P.inkHist.splice(hi, 1); redraw(); }
+        endStroke(); panPrev = centroid(); return;
+      }
+      if (P.penSeen) return; // palm rejection once a pencil has been used
+    }
+    if (cur) return;
+    cur = { er: P.inkTool === "eraser", pts: [pos(e)], byTouch: e.pointerType === "touch" }; curId = e.pointerId; strokes.push(cur); P.inkHist.push(strokes); redraw();
   };
   cv.onpointermove = e => {
-    if (!cur) return;
-    if (cur.scroll) { pane.scrollTop -= e.clientY - lastY; lastY = e.clientY; return; }
-    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e]; for (const ev of evs) cur.pts.push(pos(ev)); redraw();
+    if (e.pointerType === "touch" && touches.has(e.pointerId)) {
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touches.size >= 2 && panPrev) { const c = centroid(); pane.scrollTop -= c.y - panPrev.y; pane.scrollLeft -= c.x - panPrev.x; panPrev = c; e.preventDefault(); return; }
+    }
+    if (!cur || e.pointerId !== curId) return;
+    e.preventDefault();
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    const before = cur.pts.length; for (const ev of evs) cur.pts.push(pos(ev));
+    for (let i = Math.max(1, before); i < cur.pts.length; i++) drawStroke({ er: cur.er, pts: [cur.pts[i - 1], cur.pts[i]] });
+    ctx.globalCompositeOperation = "source-over";
   };
-  cv.onpointerup = cv.onpointercancel = () => { cur = null; };
+  const up = e => { touches.delete(e.pointerId); if (touches.size < 2) panPrev = null; if (e.pointerId === curId) endStroke(); };
+  cv.onpointerup = cv.onpointercancel = up;
+  cv.oncontextmenu = e => e.preventDefault();
+  cv.ontouchstart = cv.ontouchmove = e => { if (e.cancelable) e.preventDefault(); };
+  cv.addEventListener("gesturestart", e => e.preventDefault());
+  return redraw;
 }
-function practiceGo(i) { commitTime(); P.a.cur = Math.max(0, Math.min(P.a.qids.length - 1, i)); queueSave(); renderPractice(); $("#qpane")?.scrollTo(0, 0); }
+function inkStore(key) { let s = INK.get(key); if (!s) { s = []; INK.set(key, s); } return s; }
+function setupInk() {
+  if (!P) return; P.inkHist ||= [];
+  const qid = P.a.qids[P.a.cur], q = D.questions.get(qid) || {};
+  const r1 = attachInk($("#inkCv"), $("#qpane"), $("#qsheet"), inkStore(qid));
+  const r2 = q.mat ? attachInk($("#matInk"), $("#matpane"), $("#matbody"), inkStore("mat:" + (q.matKey || q.mat))) : null;
+  const mp = $("#matpane"); if (mp && P.matScroll && P.matScroll.key === P.matKey && P.matScroll.top) mp.scrollTop = P.matScroll.top; // same material: keep where you were reading
+  P.redrawInk = () => { r1?.(); r2?.(); };
+}
+function practiceGo(i) { commitTime(); P.a.cur = Math.max(0, Math.min(P.a.qids.length - 1, i)); P.ink = true; queueSave(); renderPractice(); $("#qpane")?.scrollTo(0, 0); }
 function closePractice() { clearInterval(P.tick); clearTimeout(P.saveT); $("#overlay").innerHTML = ""; $("#topbar").hidden = false; document.body.style.overflow = ""; drawMemo(); }
 function answerCard(a, { review = false } = {}) {
   const groups = new Map();
@@ -1498,15 +1818,17 @@ function vReview() {
     </section>
     <section style="display:flex;flex-direction:column;gap:14px;min-width:0">
       <div class="card pad">
-        <div class="row" style="margin-bottom:8px"><b class="grow">解析</b>${q.analysis ? `<button class="btn sm" data-act="copySel" title="先在解析里选中文字">选中文字 → 笔记</button><button class="btn sm ghost" data-act="copyAll">全部 → 笔记</button>` : ""}</div>
-        ${q.analysis ? `<div class="ana" id="anaBox">${esc(q.analysis)}</div>` : `<p class="small muted">这道题还没有解析。可以把解析贴在这里：</p><textarea id="anaEdit" rows="4" placeholder="粘贴解析…"></textarea><button class="btn sm" style="margin-top:6px" data-act="saveAna">保存解析</button>`}
+        ${(() => { const img = q.anaImg && (UI.anaMode || "img") === "img"; return `<div class="row" style="margin-bottom:8px;flex-wrap:wrap"><b class="grow">解析</b>${q.anaImg ? `<div class="seg" role="tablist" aria-label="解析显示方式"><button role="tab" aria-selected="${img}" data-act="anaMode" data-v="img">原图</button><button role="tab" aria-selected="${!img}" data-act="anaMode" data-v="txt">文字</button></div>` : ""}${img ? `<button class="btn sm" data-act="anaImgNote">${s.noteAnaImg ? "从笔记移除原图" : "原图 → 笔记"}</button>` : q.analysis ? `<button class="btn sm" data-act="copySel" title="先在解析里选中文字">选中文字 → 笔记</button><button class="btn sm ghost" data-act="copyAll">全部 → 笔记</button>` : ""}</div>
+        ${img ? `<img class="qimg anaimg" data-ref="${esc(q.anaImg)}" alt="第${q.n}题解析原图"><p class="small faint" style="margin:6px 0 0">原图从答案 PDF 截取，公式完整；要复制文字请切到“文字”。</p>` : ""}`; })()}
+        ${q.anaImg && (UI.anaMode || "img") === "img" ? "" : q.analysis ? `<div class="ana" id="anaBox">${esc(q.analysis)}</div>` : `<p class="small muted">这道题还没有解析。可以把解析贴在这里：</p><textarea id="anaEdit" rows="4" placeholder="粘贴解析…"></textarea><button class="btn sm" style="margin-top:6px" data-act="saveAna">保存解析</button>`}
       </div>
       <div class="card pad">
         <div class="row" style="margin-bottom:8px"><b class="grow">我的笔记</b><span class="small faint" id="noteState">${s.noteAt ? "已保存" : ""}</span></div>
         <textarea id="noteBox" rows="7" placeholder="错因、思路、要记住的表述…">${esc(s.note || "")}</textarea>
+        ${s.noteAnaImg && q.anaImg ? `<div class="small faint" style="margin:8px 0 4px">已附上解析原图：</div><img class="qimg" data-ref="${esc(q.anaImg)}" alt="解析原图">` : ""}
       </div>
       <div class="card pad">
-        <div class="row"><b class="grow">知识点</b><button class="btn sm" data-act="kpOpen">选择知识点</button>${S.sample ? `<button class="btn sm" data-act="kpAi" id="kpAiBtn">AI 推荐</button>` : ""}</div>
+        <div class="row"><b class="grow">知识点 ${kpByLabel(s) ? `<span class="kpby">· ${kpByLabel(s)}</span>` : ""}</b><button class="btn sm" data-act="kpOpen">选择知识点</button>${S.sample ? `<button class="btn sm" data-act="kpAi" id="kpAiBtn">AI 推荐</button>` : ""}</div>
         <div class="tags" style="margin-top:8px">${tags.map((t, i) => `<span class="tag" title="${esc(t)}">${esc(kpShort(t))}<button data-act="tagDel" data-i="${i}" aria-label="删除知识点">×</button></span>`).join("") || '<span class="small faint">还没有标知识点</span>'}</div>
         <div class="row" style="margin-top:8px"><input type="text" id="tagIn" list="tagList" placeholder="或输入自定义标签，回车确认" style="min-height:32px;flex:1;min-width:0"><datalist id="tagList">${allTags.filter(t => !KP.all.has(t)).map(t => `<option value="${esc(t)}">`).join("")}</datalist></div>
       </div>
@@ -1517,7 +1839,7 @@ afterRender.review = () => {
   const it = UI.reviewList[UI.reviewIdx]; if (!it) return; const qid = it.qid;
   const nb = $("#noteBox"); let t;
   if (nb) nb.oninput = () => { $("#noteState").textContent = "编辑中…"; clearTimeout(t); t = setTimeout(async () => { await setQS(qid, { note: nb.value, noteAt: Date.now() }); const el = $("#noteState"); if (el) el.textContent = "已保存"; }, 700); };
-  const ti = $("#tagIn"); if (ti) ti.onkeydown = async e => { if (e.key === "Enter" && ti.value.trim()) { const kp = [...new Set([...(qs(qid).kp || []), ti.value.trim()])]; await setQS(qid, { kp }); render(); setTimeout(() => $("#tagIn")?.focus(), 0); } };
+  const ti = $("#tagIn"); if (ti) ti.onkeydown = async e => { if (e.key === "Enter" && ti.value.trim()) { const kp = [...new Set([...(qs(qid).kp || []), ti.value.trim()])]; await setQS(qid, { kp, kpBy: "user" }); render(); setTimeout(() => $("#tagIn")?.focus(), 0); } };
   const cs = $('[data-act="copySel"]'); if (cs) cs.addEventListener("pointerdown", e => e.preventDefault());
 };
 function appendNote(text) {
@@ -1549,7 +1871,7 @@ function drawKp() {
   const si = $("#kpSearch"); si.oninput = () => { KPUI.q = si.value; const pos = si.selectionStart; drawKp(); const n = $("#kpSearch"); n.focus(); n.setSelectionRange(pos, pos); };
   const ka = $("#kpAll"); if (ka) ka.onchange = () => { KPUI.all = ka.checked; drawKp(); };
 }
-async function kpToggle(path) { const cur = qs(KPUI.qid).kp || []; const kp = cur.includes(path) ? cur.filter(x => x !== path) : [...cur, path]; await setQS(KPUI.qid, { kp }); drawKp(); }
+async function kpToggle(path) { const s0 = qs(KPUI.qid); const cur = s0.kpBy === "user" || !s0.kpBy ? (s0.kp || []) : (s0.kp || []).filter(x => x === path); const kp = cur.includes(path) ? cur.filter(x => x !== path) : [...cur, path]; await setQS(KPUI.qid, { kp, kpBy: "user" }); drawKp(); }
 async function aiTag(qid) {
   if (!S.sample) throw { code: "unavailable" };
   const q = D.questions.get(qid); const cands = kpUnder(rootsFor(q.module));
@@ -1570,18 +1892,14 @@ ${cands.join("\n")}`;
   const res = await S.sample.json(prompt, { modelTier: "quick" });
   const picked = (res && Array.isArray(res.kp) ? res.kp : []).map(x => String(x).trim()).filter(x => KP.all.has(x)).slice(0, 2);
   if (!picked.length) return [];
-  const kp = [...new Set([...(qs(qid).kp || []), ...picked])]; await setQS(qid, { kp }); return picked;
+  const s0 = qs(qid); const kp = [...new Set([...(s0.kpBy === "rule" || s0.kpBy === "ai" ? [] : (s0.kp || [])), ...picked])]; await setQS(qid, { kp, kpBy: "user" }); return picked;
 }
 const aiErr = e => ({ not_granted: "没有获得使用 AI 的许可", rate_limited: "请求太频繁，稍后再试", cancelled: "已取消" }[e?.code] || "AI 归类失败：" + (e?.message || e?.code || "未知错误"));
 async function aiBatch(items) {
-  const todo = items.filter(x => !(x.s.kp || []).some(k => KP.all.has(k))).slice(0, 20);
-  if (!todo.length) return toast("选中的题都已经有知识点了");
-  let done = 0;
-  for (const x of todo) {
-    toast(`AI 归类中 ${done + 1}/${todo.length}…`, 60000);
-    try { await aiTag(x.q.id); done++; } catch (e) { toast(aiErr(e), 4000); render(); return; }
-  }
-  toast(`已为 ${done} 道题标好知识点${items.length > todo.length ? "（每次最多 20 道，已有知识点的会跳过）" : ""}`, 4000); render();
+  const todo = items.filter(x => x.s.kpBy !== "user").map(x => x.q);
+  if (!todo.length) return toast("选中的题都是你手动选的知识点");
+  try { const n = await aiTagMany(todo, (d, t) => toast(`AI 归类中 ${d}/${t}…`, 60000)); toast(`AI 已为 ${n} 道题判断知识点`, 4000); } catch (e) { toast(aiErr(e), 4000); }
+  render();
 }
 
 /* =====================================================================
@@ -1618,7 +1936,7 @@ function vBook() {
     ${S.sample ? `<button class="btn" data-act="bookAi" ${n ? "" : "disabled"} title="为选中且还没有知识点的题自动归类">AI 归类</button>` : ""}<button class="btn" data-act="bookReview" ${n ? "" : "disabled"}>看解析</button><button class="btn" data-act="bookExport" ${n ? "" : "disabled"}>导出 PDF</button><button class="btn primary" data-act="bookRedo" ${n ? "" : "disabled"}>重新做</button></div></div>`;
 }
 function vNotes() {
-  const groups = bookItems(s => (s.note || "").trim()); const all = groups.flatMap(g => g[1]);
+  const groups = bookItems(s => (s.note || "").trim() || s.noteAnaImg); const all = groups.flatMap(g => g[1]);
   const n = [...UI.noteSel].filter(id => all.some(x => x.q.id === id)).length;
   return `
   <section class="card pad"><div class="kpi"><div><b>${all.length}</b><span>道题有笔记</span></div><div><b>${groups.length}</b><span>个模块</span></div></div></section>
@@ -1668,15 +1986,28 @@ function drawMemo() {
 function addMemo() {
   const ctx = memoCtx(); const q = ctx && D.questions.get(ctx.qid); const box = $("#memoIn"); const text = (box?.value || "").trim();
   if (!q || !text) return toast("先写点内容");
-  const doc = { ...memoDoc(q.pid) }; doc.entries = [...doc.entries, { id: uid("m"), at: Date.now(), qid: q.id, n: q.n, mod: q.module || "", aid: ctx.aid || null, text }];
-  saveMemoDoc(doc); MEMO.draft = ""; drawMemo(); setTimeout(() => $("#memoIn")?.focus(), 0); toast("已记下");
+  const entry = { id: uid("m"), at: Date.now(), qid: q.id, n: q.n, mod: q.module || "", aid: ctx.aid || null, text };
+  entry.todoId = memoTodo(q.pid, entry);
+  const doc = { ...memoDoc(q.pid) }; doc.entries = [...doc.entries, entry];
+  saveMemoDoc(doc); MEMO.draft = ""; drawMemo(); setTimeout(() => $("#memoIn")?.focus(), 0); toast("已记下，并加入待办"); updateBadge();
 }
-function delMemo(pid, id) { const doc = { ...memoDoc(pid) }; doc.entries = doc.entries.filter(e => e.id !== id); saveMemoDoc(doc); }
+function memoTodo(pid, e) { const t = { id: uid("t"), createdAt: Date.now(), done: false, pid, mod: e.mod || "", pri: "中", src: "memo", memoId: e.id, qid: e.qid, text: `第 ${e.n} 题：${e.text}` }; D.todos.unshift(t); queueWrite("todos", t.id, t); return t.id; }
+function delMemo(pid, id) {
+  const doc = { ...memoDoc(pid) }; const e = doc.entries.find(x => x.id === id); doc.entries = doc.entries.filter(x => x.id !== id); saveMemoDoc(doc);
+  const tid = e?.todoId; if (tid && D.todos.some(t => t.id === tid && !t.done)) { D.todos = D.todos.filter(t => t.id !== tid); dbDel("todos", tid).catch(() => {}); }
+}
+/* older notes written before notes became to-dos: turn each into one to-do, once */
+function migrateMemoTodos() {
+  for (const doc of D.memos.values()) {
+    let changed = false; const entries = doc.entries.map(e => { if (e.todoId) return e; changed = true; return { ...e, todoId: memoTodo(doc.id, e) }; });
+    if (changed) saveMemoDoc({ ...doc, entries });
+  }
+}
 
 /* ---------- report: notes + summary + per-paper todos ---------- */
 function todoRow(t, compact) {
   const p = t.pid && paperOf(t.pid);
-  return `<div class="todo ${t.done ? "done" : ""}"><input type="checkbox" data-act="todoToggle" data-id="${t.id}" ${t.done ? "checked" : ""} aria-label="完成"><div class="grow" style="min-width:0"><div class="todo-t">${esc(t.text)}</div><div class="row small" style="gap:6px;margin-top:4px">${t.pri ? `<span class="chip ${t.pri === "高" ? "bad" : t.pri === "中" ? "mark" : ""}">${esc(t.pri)}优先</span>` : ""}${t.mod ? `<span class="chip acc">${esc(t.mod)}</span>` : ""}${!compact && p ? `<span class="faint">${esc(p.title)}</span>` : ""}${t.src === "ai" ? `<span class="faint">AI 建议</span>` : ""}${t.mod && t.pid ? `<button class="btn ghost sm" data-act="todoGo" data-id="${t.id}">去错题本 →</button>` : ""}</div></div><button class="btn ghost sm danger" data-act="todoDel" data-id="${t.id}" aria-label="删除待办">×</button></div>`;
+  return `<div class="todo ${t.done ? "done" : ""}"><input type="checkbox" data-act="todoToggle" data-id="${t.id}" ${t.done ? "checked" : ""} aria-label="完成"><div class="grow" style="min-width:0"><div class="todo-t">${esc(t.text)}</div><div class="row small" style="gap:6px;margin-top:4px">${t.pri ? `<span class="chip ${t.pri === "高" ? "bad" : t.pri === "中" ? "mark" : ""}">${esc(t.pri)}优先</span>` : ""}${t.mod ? `<span class="chip acc">${esc(t.mod)}</span>` : ""}${!compact && p ? `<span class="faint">${esc(p.title)}</span>` : ""}${t.src === "ai" ? `<span class="faint">AI 建议</span>` : t.src === "memo" ? `<span class="faint">来自随手记</span>` : ""}${t.mod && t.pid ? `<button class="btn ghost sm" data-act="todoGo" data-id="${t.id}">去错题本 →</button>` : ""}</div></div><button class="btn ghost sm danger" data-act="todoDel" data-id="${t.id}" aria-label="删除待办">×</button></div>`;
 }
 function reportSummary(a) {
   const pids = a.pid ? [a.pid] : [...new Set(a.qids.map(id => D.questions.get(id)?.pid).filter(Boolean))];
@@ -1689,16 +2020,17 @@ function reportSummary(a) {
     const todos = D.todos.filter(t => t.pid === pid).sort((x, y) => (x.done - y.done) || (({ 高: 0, 中: 1, 低: 2 })[x.pri] ?? 1) - (({ 高: 0, 中: 1, 低: 2 })[y.pri] ?? 1));
     return `
   <h2 class="section-title">${pids.length > 1 ? esc(p.title) + " · " : ""}本卷随手记（${entries.length}）</h2>
-  <section class="card pad">${entries.length ? [...byQ.entries()].map(([qid, list]) => { const q = D.questions.get(qid) || {}; const r = a.answers?.[qid]; return `<div class="memo-q"><div class="row small"><b>第 ${q.n} 题</b><span class="chip acc">${esc(q.module || "")}</span>${r ? `<span class="${r.res === "ok" ? "good-t" : r.res === "no" ? "bad-t" : "faint"}">你的答案 ${esc(r.c || "—")} / 正确 ${esc(q.answer || "—")}</span>` : ""}<button class="btn ghost sm" data-act="openQ1" data-id="${qid}">看题</button></div>${list.map(e => `<div class="row memo-line"><span class="grow">${esc(e.text)}</span><button class="memo-del" data-act="memoDel" data-pid="${esc(pid)}" data-id="${esc(e.id)}">删除</button></div>`).join("")}</div>`; }).join("") : `<p class="small muted">做题或看解析时，点右上角的“随手记”记下想法，会按题号汇总到这里。</p>`}</section>
+  <section class="card pad">${entries.length ? [...byQ.entries()].map(([qid, list]) => { const q = D.questions.get(qid) || {}; const r = a.answers?.[qid]; return `<div class="memo-q"><div class="row small"><b>第 ${q.n} 题</b><span class="chip acc">${esc(q.module || "")}</span>${r ? `<span class="${r.res === "ok" ? "good-t" : r.res === "no" ? "bad-t" : "faint"}">你的答案 ${esc(r.c || "—")} / 正确 ${esc(q.answer || "—")}</span>` : ""}<button class="btn ghost sm" data-act="openQ1" data-id="${qid}">看题</button></div>${list.map(e => `<div class="row memo-line"><span class="grow">${esc(e.text)}</span>${(() => { const t = D.todos.find(x => x.id === e.todoId); return t ? `<span class="chip ${t.done ? "good" : ""}">${t.done ? "待办已完成" : "已在待办"}</span>` : ""; })()}<button class="memo-del" data-act="memoDel" data-pid="${esc(pid)}" data-id="${esc(e.id)}">删除</button></div>`).join("")}</div>`; }).join("") : `<p class="small muted">做题或看解析时，点右上角的“随手记”记下想法，会按题号汇总到这里。</p>`}</section>
   <h2 class="section-title">本卷总结</h2>
   <section class="card pad">
-    <textarea class="sumBox" data-pid="${esc(pid)}" rows="6" placeholder="这套卷子的整体问题、时间分配、下次要注意的……">${esc(doc.summary || "")}</textarea>
-    <div class="row" style="margin-top:10px"><span class="small faint grow" id="sumState-${esc(pid)}">${doc.summaryAt ? "已保存 · " + fmtDate(doc.summaryAt) : ""}</span>
-      <button class="btn sm" data-act="sumRule" data-pid="${esc(pid)}" data-aid="${a.id}">按错题生成待办</button>
-      ${S.sample ? `<button class="btn primary sm" data-act="sumAi" data-pid="${esc(pid)}" data-aid="${a.id}">AI 写总结 + 待办</button>` : ""}</div>
+    <div class="row" style="margin-bottom:10px"><span class="small muted grow">${S.sample ? "AI 会读本卷的错题、各模块用时、随手记和笔记，写一段总结，并给出建议的待办，由你决定要不要加入。" : "按本卷错题、各模块正确率和用时生成总结和建议的待办，由你决定要不要加入。"}</span>
+      ${S.sample ? `<button class="btn primary sm" data-act="sumAi" data-pid="${esc(pid)}" data-aid="${a.id}">${doc.summary ? "重新生成总结" : "AI 生成本卷总结"}</button><button class="btn ghost sm" data-act="sumRule" data-pid="${esc(pid)}" data-aid="${a.id}">不用 AI，按错题生成</button>` : `<button class="btn primary sm" data-act="sumRule" data-pid="${esc(pid)}" data-aid="${a.id}">生成本卷总结</button>`}</div>
+    <textarea class="sumBox" data-pid="${esc(pid)}" rows="7" placeholder="点上方按钮生成总结，生成后也可以自己修改。">${esc(doc.summary || "")}</textarea>
+    <div class="small faint" style="margin-top:6px" id="sumState-${esc(pid)}">${doc.summaryAt ? "已保存 · " + fmtDate(doc.summaryAt) : ""}</div>
+    ${sugBox(pid)}
   </section>
   <h2 class="section-title">本卷待办（${todos.filter(t => !t.done).length} 项未完成）</h2>
-  <section class="card pad">${todos.length ? todos.map(t => todoRow(t, true)).join("") : `<p class="small muted">点上面的“按错题生成待办”，会根据本卷错题、各模块正确率和用时，列出接下来要做的事。也可以在“待办”页手动添加。</p>`}</section>`;
+  <section class="card pad">${todos.length ? todos.map(t => todoRow(t, true)).join("") : `<p class="small muted">随手记会自动变成待办；生成本卷总结后，你确认的建议也会出现在这里。</p>`}</section>`;
   }).join("");
 }
 afterRender.report = () => {
@@ -1759,8 +2091,23 @@ ${memoLines}
   const res = await S.sample.json(prompt, { modelTier: "default" });
   const summary = String(res?.summary || "").trim();
   const todos = (Array.isArray(res?.todos) ? res.todos : []).map(t => ({ pid, text: String(t.text || "").trim(), mod: String(t.module || "").trim(), pri: ["高", "中", "低"].includes(t.priority) ? t.priority : "中", src: "ai" })).filter(t => t.text);
-  if (summary) { const cur = (doc.summary || "").trim(); saveMemoDoc({ ...doc, summary: cur ? `${cur}\n\n—— AI 总结 ——\n${summary}` : summary, summaryAt: Date.now() }); }
-  return addTodos(todos);
+  return setSuggestions(pid, summary, todos);
+}
+function setSuggestions(pid, summary, list) {
+  const doc = memoDoc(pid);
+  const existing = new Set(D.todos.filter(t => t.pid === pid && !t.done).map(t => t.text));
+  const kept = (doc.sugs || []).filter(x => x.state !== "pending");
+  const sugs = [...kept, ...list.filter(t => !existing.has(t.text)).map(t => ({ ...t, id: uid("s"), state: "pending" }))];
+  saveMemoDoc({ ...doc, summary: summary || doc.summary || "", summaryAt: Date.now(), sugs });
+  return sugs.filter(x => x.state === "pending").length;
+}
+function ruleSummary(pid, aid) {
+  const { a, wrong } = paperFacts(pid, aid); if (!a) return "";
+  const rows = Object.entries(a.summary.byMod).map(([m, x]) => ({ m, acc: pct(x.ok, x.n), x })).sort((p, q) => p.acc - q.acc);
+  const weak = rows.filter(r => r.acc < 70).slice(0, 3).map(r => `${r.m}（${r.acc}%）`);
+  const slow = rows.filter(r => r.x.sug && r.x.t > r.x.sug * 1.1).map(r => `${r.m}（用时 ${fmtT(r.x.t)}，建议 ${fmtT(r.x.sug)}）`);
+  const memos = memoDoc(pid).entries.length;
+  return [`本卷正确率 ${a.summary.acc}%，错 ${wrong.length} 题，总用时 ${fmtT(a.summary.time)}。`, weak.length ? `最需要补的模块：${weak.join("、")}。` : "各模块正确率都在 70% 以上。", slow.length ? `超时的模块：${slow.join("、")}。` : "", memos ? `做题时记了 ${memos} 条随手记，已经自动加入待办。` : ""].filter(Boolean).join("\n");
 }
 
 /* ---------- 待办 view ---------- */
@@ -1773,10 +2120,10 @@ function vTodos() {
   <section class="card pad"><div class="kpi"><div><b>${D.todos.filter(t => !t.done).length}</b><span>未完成</span></div><div><b>${D.todos.filter(t => t.done).length}</b><span>已完成</span></div></div></section>
   <section class="card pad" style="margin-top:14px">
     <div class="row"><input type="text" id="todoIn" placeholder="添加一条待办，回车确认" style="flex:1;min-width:0"><select id="todoPaper"><option value="">不关联试卷</option>${D.papers.map(p => `<option value="${p.id}">${esc(p.title)}</option>`).join("")}</select><button class="btn primary" data-act="todoAdd">添加</button></div>
-    <p class="small faint" style="margin:8px 0 0">在每套卷子的练习报告底部，可以按错题自动生成待办。</p>
+    <p class="small faint" style="margin:8px 0 0">随手记会自动变成待办；在练习报告底部生成本卷总结后，确认过的建议也会加到这里。</p>
   </section>
   <div class="row" style="margin:14px 0"><div class="seg" role="tablist">${[["todo", "未完成"], ["done", "已完成"], ["all", "全部"]].map(([k, n]) => `<button role="tab" aria-selected="${f === k}" data-act="todoFilter" data-v="${k}">${n}</button>`).join("")}</div></div>
-  ${list.length ? [...groups.entries()].map(([pid, ts]) => { const p = paperOf(pid); const last = pid && D.attempts.find(a => a.pid === pid && a.finishedAt); return `<section class="card pad" style="margin-bottom:12px"><div class="row" style="margin-bottom:6px"><b class="grow">${esc(p ? p.title : "通用")}</b>${last ? `<button class="btn ghost sm" data-act="report" data-id="${last.id}">看报告</button>` : ""}</div>${ts.sort((a, b) => (priOrder[a.pri] ?? 1) - (priOrder[b.pri] ?? 1)).map(t => todoRow(t, true)).join("")}</section>`; }).join("") : `<div class="card empty">${f === "done" ? "还没有完成的待办。" : "没有待办。做完一套卷子后，在练习报告底部点“按错题生成待办”。"}</div>`}`;
+  ${list.length ? [...groups.entries()].map(([pid, ts]) => { const p = paperOf(pid); const last = pid && D.attempts.find(a => a.pid === pid && a.finishedAt); return `<section class="card pad" style="margin-bottom:12px"><div class="row" style="margin-bottom:6px"><b class="grow">${esc(p ? p.title : "通用")}</b>${last ? `<button class="btn ghost sm" data-act="report" data-id="${last.id}">看报告</button>` : ""}</div>${ts.sort((a, b) => (priOrder[a.pri] ?? 1) - (priOrder[b.pri] ?? 1)).map(t => todoRow(t, true)).join("")}</section>`; }).join("") : `<div class="card empty">${f === "done" ? "还没有完成的待办。" : "没有待办。做题时记的随手记、确认过的总结建议都会出现在这里。"}</div>`}`;
 }
 afterRender.todos = () => { const i = $("#todoIn"); if (i) i.onkeydown = e => { if (e.key === "Enter") $('[data-act="todoAdd"]').click(); }; };
 function updateBadge() { const b = $("#todoBadge"); if (b) { const n = D.todos.filter(t => !t.done).length; b.textContent = n ? n : ""; } }
@@ -1819,36 +2166,204 @@ afterRender.history = () => {
 };
 
 /* =====================================================================
-   Stats
+   Overall report (across papers)
    ===================================================================== */
-function vStats() {
-  const done = D.attempts.filter(a => a.finishedAt && a.summary);
-  if (!done.length) return `<div class="card empty">做完第一套题后，这里会显示每套题各模块的用时和正确率，以及各知识点的正确率。</div>`;
-  // per-module overall (all graded answers)
-  const mod = {}, kp = {};
-  for (const a of done) for (const qid of a.qids) {
-    const r = a.answers[qid]; const q = D.questions.get(qid); if (!q || !r || r.res === "unk") continue;
-    const m = mod[q.module || "未分类"] ||= { n: 0, ok: 0, t: 0 }; m.n++; m.t += r.t || 0; if (r.res === "ok") m.ok++;
+const GROUPS = [["政治与常识", ["政治理论", "常识判断", "综合知识"]], ["言语理解与表达", ["言语理解与表达", "选词填空", "逻辑填空", "片段阅读", "语句表达", "阅读理解", "篇章阅读"]], ["数量关系", ["数量关系", "数字推理", "数学运算", "数字应用"]], ["判断推理", ["判断推理", "科学推理", "图形推理", "定义判断", "类比推理", "逻辑判断", "演绎推理", "分析推理"]], ["资料分析", ["资料分析", "综合分析"]]];
+const groupOf = m => (GROUPS.find(g => g[1].includes(m)) || ["其他"])[0];
+const SLOW_SEC = 15; // 平均每题少于 15 秒，多半是对答案录入，不计入速度
+const yearOf = t => +((t || "").match(/(?:19|20)\d{2}/) || [0])[0];
+function shortTitle(t) { const y = (t || "").match(/(?:19|20)\d{2}/)?.[0] || ""; const rest = (t || "").replace(/(?:19|20)\d{2}年?/, "").replace(/真题|试卷|试题|卷|练习|行测|公务员|考试|录用|选调生?/g, "").trim(); return (y + rest.slice(0, 3)) || (t || "").slice(0, 6); }
+function overall() {
+  const meta = D.meta.overall || {}; const excl = new Set(meta.excl || []);
+  let all = D.attempts.filter(a => a.finishedAt && a.summary && (UI.ovRedo || a.mode === "paper"));
+  const sortKey = a => UI.ovSort === "year" ? (yearOf(a.title) * 1e13 + a.finishedAt) : a.finishedAt;
+  all = all.slice().sort((x, y) => sortKey(x) - sortKey(y));
+  const rows = all.map(a => {
+    const answered = Object.values(a.answers || {}).filter(r => r.c).length;
+    const avgT = answered ? a.summary.time / answered : 0;
+    const grp = {}, mod = {};
+    for (const qid of a.qids) {
+      const r = a.answers[qid]; const q = D.questions.get(qid); if (!q || !r || r.res === "unk") continue;
+      const m = q.module || "未分类", g = groupOf(m);
+      for (const [o, k] of [[grp, g], [mod, m]]) { const x = o[k] ||= { n: 0, ok: 0, t: 0, ans: 0 }; x.n++; x.t += r.t || 0; if (r.c) x.ans++; if (r.res === "ok") x.ok++; }
+    }
+    return { a, id: a.id, label: shortTitle(a.title), acc: a.summary.acc, score: a.summary.score, max: a.summary.maxScore, answered, avgT, timeBad: avgT < SLOW_SEC, excl: excl.has(a.id), grp, mod };
+  });
+  const seen = {}; rows.forEach(r => { seen[r.label] = (seen[r.label] || 0) + 1; if (seen[r.label] > 1) r.label += "·" + seen[r.label]; });
+  return { rows, use: rows.filter(r => !r.excl), meta };
+}
+function lineChart(pts, { fmt = v => v, yMin = 0, yMax = null, color = "var(--accent)", empty = "数据不足" } = {}) {
+  const W = 320, H = 168, L = 40, R = 26, T = 20, B = 34;
+  const vals = pts.filter(p => p.v != null).map(p => p.v); if (!vals.length) return `<p class="small muted" style="padding:30px 0;text-align:center">${empty}</p>`;
+  let lo = yMin ?? Math.min(...vals), hi = yMax ?? Math.max(...vals) * 1.15; if (hi - lo < 1e-9) hi = lo + 1;
+  const x = i => pts.length === 1 ? (L + W - R) / 2 : L + (W - L - R) * i / (pts.length - 1);
+  const y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+  const grid = [lo, (lo + hi) / 2, hi].map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="var(--line)" stroke-width="1"/><text x="${L - 6}" y="${(y(v) + 3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="var(--ink3)">${fmt(v, true)}</text>`).join("");
+  const on = pts.map((p, i) => ({ ...p, i })).filter(p => p.v != null);
+  const path = on.map((p, k) => `${k ? "L" : "M"}${x(p.i).toFixed(1)} ${y(p.v).toFixed(1)}`).join(" ");
+  const step = Math.max(1, Math.ceil(pts.length / 6));
+  return `<svg class="lc" viewBox="0 0 ${W} ${H}" role="img">${grid}
+    <path d="${path}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${on.map(p => `<g><circle cx="${x(p.i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="4" fill="var(--card)" stroke="${color}" stroke-width="2"/><text x="${x(p.i).toFixed(1)}" y="${(y(p.v) - 9).toFixed(1)}" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--ink)">${fmt(p.v)}</text><title>${esc(p.tip || "")}</title></g>`).join("")}
+    ${pts.map((p, i) => i % step && i !== pts.length - 1 ? "" : `<text x="${x(i).toFixed(1)}" y="${H - 12}" text-anchor="middle" font-size="10" fill="${p.v == null ? "var(--ink3)" : "var(--ink2)"}">${esc(p.label)}</text>`).join("")}
+  </svg>`;
+}
+function spark(vals) {
+  const W = 90, H = 26, on = vals.map((v, i) => [v, i]).filter(([v]) => v != null); if (on.length < 2) return "";
+  const x = i => 4 + (W - 8) * i / (vals.length - 1), y = v => H - 4 - (H - 8) * v / 100;
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" aria-hidden="true"><path d="${on.map(([v, i], k) => `${k ? "L" : "M"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="1.8"/>${on.map(([v, i]) => `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.2" fill="var(--accent)"/>`).join("")}</svg>`;
+}
+const stars = acc => { const n = Math.max(0, Math.min(5, Math.round(acc / 20 * 2) / 2)); let s = ""; for (let i = 1; i <= 5; i++) s += `<i class="${n >= i ? "on" : n >= i - 0.5 ? "half" : ""}">★</i>`; return `<span class="stars" aria-label="${n} 星">${s}</span>`; };
+const heat = acc => acc == null ? "" : acc >= 70 ? "h-good" : acc >= 50 ? "h-mid" : "h-bad";
+const delta = (d, unit = "%") => d == null || !isFinite(d) ? `<span class="faint">—</span>` : d === 0 ? `<span class="faint">持平</span>` : `<span class="${d > 0 ? "good-t" : "bad-t"}">${d > 0 ? "↑" : "↓"}${Math.abs(d)}${unit}</span>`;
+function kpRollup(use) {
+  const kp = {};
+  for (const r of use) for (const qid of r.a.qids) {
+    const ans = r.a.answers[qid]; if (!ans || ans.res === "unk" || !D.questions.get(qid)) continue;
     const paths = new Set(); for (const k of (qs(qid).kp || [])) { const segs = (KP.all.has(k) ? k : "自定义标签/" + k).split("/"); for (let i = 1; i <= segs.length; i++) paths.add(segs.slice(0, i).join("/")); }
-    for (const pth of paths) { const x = kp[pth] ||= { path: pth, n: 0, ok: 0 }; x.n++; if (r.res === "ok") x.ok++; }
+    for (const pth of paths) { const x = kp[pth] ||= { path: pth, n: 0, ok: 0, t: 0, tn: 0, by: {} }; x.n++; if (ans.res === "ok") x.ok++; if (!r.timeBad) { x.t += ans.t || 0; x.tn++; } const b = x.by[r.id] ||= { n: 0, ok: 0 }; b.n++; if (ans.res === "ok") b.ok++; }
   }
-  const kpRows = Object.values(kp);
+  return kp;
+}
+function overallRule(O) {
+  const u = O.use; if (!u.length) return "";
+  const first = u[0], last = u[u.length - 1], timed = u.filter(r => !r.timeBad);
+  const lines = [];
+  const avg = Math.round(u.reduce((s, r) => s + r.acc, 0) / u.length);
+  lines.push(`共统计 ${u.length} 次整卷练习，平均正确率 ${avg}%${u.length > 1 ? `；从「${first.a.title}」的 ${first.acc}% 到「${last.a.title}」的 ${last.acc}%，${last.acc > first.acc ? `提高了 ${last.acc - first.acc} 个百分点` : last.acc < first.acc ? `下降了 ${first.acc - last.acc} 个百分点` : "基本持平"}` : ""}。`);
+  const gs = {}; u.forEach(r => Object.entries(r.grp).forEach(([g, x]) => { const y = gs[g] ||= { n: 0, ok: 0 }; y.n += x.n; y.ok += x.ok; }));
+  const gl = Object.entries(gs).map(([g, x]) => ({ g, acc: pct(x.ok, x.n), n: x.n })).sort((a, b) => b.acc - a.acc);
+  if (gl.length > 1) lines.push(`最稳的是${gl[0].g}（${gl[0].acc}%），最弱的是${gl[gl.length - 1].g}（${gl[gl.length - 1].acc}%）。`);
+  if (timed.length) { const t = timed.map(r => Math.round(r.avgT)); lines.push(`平均每题 ${Math.round(t.reduce((s, v) => s + v, 0) / t.length)} 秒${timed.length > 1 ? `（最近一次 ${t[t.length - 1]} 秒）` : ""}。`); }
+  const tg = {}; timed.forEach(r => Object.entries(r.grp).forEach(([g, x]) => { const y = tg[g] ||= { t: 0, n: 0 }; y.t += x.t; y.n += x.n; }));
+  const slow = Object.entries(tg).map(([g, x]) => ({ g, s: Math.round(x.t / x.n) })).sort((a, b) => b.s - a.s)[0];
+  if (slow) lines.push(`最耗时的是${slow.g}，平均每题 ${slow.s} 秒。`);
+  if (u.length - timed.length) lines.push(`有 ${u.length - timed.length} 次练习平均每题不到 ${SLOW_SEC} 秒（多半是对答案录入），只算正确率，不算速度。`);
+  const kp = Object.values(kpRollup(u)).filter(x => x.n >= 2 && x.path.split("/").length >= 2 && !x.path.startsWith("自定义"));
+  const weak = kp.filter(x => pct(x.ok, x.n) < 60).sort((a, b) => pct(a.ok, a.n) - pct(b.ok, b.n) || b.n - a.n).slice(0, 4);
+  if (weak.length) lines.push(`得分率最低的知识点：${weak.map(x => `${kpShort(x.path)}（${x.ok}/${x.n}）`).join("、")}。`);
+  return lines.join("\n");
+}
+function overallTodos(O) {
+  const out = [], kp = Object.values(kpRollup(O.use)).filter(x => x.n >= 2 && x.path.split("/").length >= 3 && !x.path.startsWith("自定义"));
+  kp.filter(x => pct(x.ok, x.n) < 60).sort((a, b) => pct(a.ok, a.n) - pct(b.ok, b.n) || b.n - a.n).slice(0, 4).forEach(x => out.push({ text: `专项复习「${kpShort(x.path)}」：累计 ${x.n} 题只对 ${x.ok} 题，回看错题解析后做一组同类题`, mod: x.path.split("/")[0], pri: pct(x.ok, x.n) < 40 ? "高" : "中", src: "rule" }));
+  const gs = {}; O.use.forEach(r => Object.entries(r.grp).forEach(([g, x]) => { const y = gs[g] ||= { n: 0, ok: 0 }; y.n += x.n; y.ok += x.ok; }));
+  Object.entries(gs).filter(([, x]) => pct(x.ok, x.n) < 65).sort((a, b) => pct(a[1].ok, a[1].n) - pct(b[1].ok, b[1].n)).slice(0, 2).forEach(([g, x]) => out.push({ text: `${g}整体正确率 ${pct(x.ok, x.n)}%，本周安排 2 次该模块的限时套题`, mod: g, pri: "中", src: "rule" }));
+  return out;
+}
+async function aiOverall(O) {
+  if (!S.sample) throw { code: "unavailable" };
+  const kp = Object.values(kpRollup(O.use)).filter(x => x.path.split("/").length >= 2 && !x.path.startsWith("自定义"));
+  const kpLines = kp.filter(x => x.n >= 2).sort((a, b) => pct(a.ok, a.n) - pct(b.ok, b.n)).slice(0, 30).map(x => `${x.path}：${x.ok}/${x.n}（${pct(x.ok, x.n)}%）${x.tn ? `，平均 ${Math.round(x.t / x.tn)} 秒/题` : ""}`).join("\n");
+  const attLines = O.use.map(r => `${r.a.title}（${fmtDate(r.a.finishedAt)}）：正确率 ${r.acc}%${r.score != null ? `，估分 ${r.score}/${r.max}` : ""}，${r.timeBad ? "用时异常（对答案录入），不计速度" : `平均 ${Math.round(r.avgT)} 秒/题，总用时 ${fmtDur(r.a.summary.time)}`}\n  ${Object.entries(r.mod).map(([m, x]) => `${m} ${x.ok}/${x.n}${r.timeBad ? "" : ` ${Math.round(x.t / x.n)}秒/题`}`).join("；")}`).join("\n");
+  const notes = [...D.memos.values()].filter(d => d.id !== "__overall" && (d.summary || "").trim()).map(d => `「${paperOf(d.id)?.title || ""}」：${d.summary.slice(0, 300)}`).join("\n");
+  const prompt = `你是一位行测备考教练。下面是一名考生做过的多套整卷练习数据（按时间顺序），请写一份“整体报告总结”，并给出接下来 1-2 周的学习待办。
+要求：
+1. summary：300-450 字中文。依次写：①正确率和估分的变化趋势；②速度变化和时间分配问题；③各模块的强弱与变化（引用具体数字）；④得分率最低的 3-5 个知识点及可能原因；⑤下一阶段最该做的两件事。不要客套话，不要编造数据里没有的信息。
+2. todos：5-8 条，每条具体、可执行（写清楚练什么、多少题、限时多久），按优先级排序。
+只输出 JSON：{"summary": "...", "todos": [{"text": "...", "module": "模块名或空", "priority": "高|中|低"}]}
+
+各次练习：
+${attLines}
+
+知识点得分率（由低到高）：
+${kpLines || "（还没有知识点数据）"}
+
+考生写过的单卷总结：
+${notes || "（无）"}`;
+  const res = await S.sample.json(prompt, { modelTier: "default" });
+  const summary = String(res?.summary || "").trim();
+  const todos = (Array.isArray(res?.todos) ? res.todos : []).map(t => ({ text: String(t.text || "").trim(), mod: String(t.module || "").trim(), pri: ["高", "中", "低"].includes(t.priority) ? t.priority : "中", src: "ai" })).filter(t => t.text);
+  return setSuggestions("__overall", summary, todos);
+}
+function sugBox(pid) {
+  const doc = memoDoc(pid); const sug = (doc.sugs || []).filter(x => x.state === "pending"); if (!sug.length) return "";
+  return `<div class="sug-box"><div class="row"><b class="grow">建议的待办（${sug.length}）</b><button class="btn sm primary" data-act="sugAll" data-pid="${esc(pid)}">全部加入</button><button class="btn sm ghost" data-act="sugNone" data-pid="${esc(pid)}">全部不要</button></div>${sug.map(x => `<div class="sug-row"><div class="grow" style="min-width:0"><div class="todo-t">${esc(x.text)}</div><div class="row small" style="gap:6px;margin-top:4px">${x.pri ? `<span class="chip ${x.pri === "高" ? "bad" : x.pri === "中" ? "mark" : ""}">${esc(x.pri)}优先</span>` : ""}${x.mod ? `<span class="chip acc">${esc(x.mod)}</span>` : ""}</div></div><button class="btn sm primary" data-act="sugAdd" data-pid="${esc(pid)}" data-id="${x.id}">加入待办</button><button class="btn sm ghost" data-act="sugDrop" data-pid="${esc(pid)}" data-id="${x.id}">不要</button></div>`).join("")}</div>`;
+}
+function vStats() {
+  const O = overall(), R = O.rows, U = O.use;
+  const head = `<div class="row" style="margin-bottom:14px;flex-wrap:wrap"><h2 class="grow" style="font-family:var(--f-display);margin:0">总体报告</h2>
+    <div class="seg" role="tablist" aria-label="排序"><button role="tab" aria-selected="${UI.ovSort !== "year"}" data-act="ovSort" data-v="time">按练习时间</button><button role="tab" aria-selected="${UI.ovSort === "year"}" data-act="ovSort" data-v="year">按试卷年份</button></div>
+    <label class="row small"><input type="checkbox" data-act="ovRedo" ${UI.ovRedo ? "checked" : ""}> 包含错题重做</label></div>`;
+  if (!R.length) return head + `<div class="card empty">做完第一套题后，这里会汇总你每套卷子的正确率、速度和各知识点得分率的变化。</div>`;
+  const timed = U.filter(r => !r.timeBad);
+  const last = U[U.length - 1], prev = U[U.length - 2];
+  const avgAcc = U.length ? Math.round(U.reduce((s, r) => s + r.acc, 0) / U.length) : 0;
+  const avgSec = timed.length ? Math.round(timed.reduce((s, r) => s + r.avgT, 0) / timed.length) : null;
+  const sameMax = U.length && U.every(r => r.max && r.max === U[0].max) ? U[0].max : null;
+  const avgScore = sameMax ? (U.reduce((s, r) => s + r.score, 0) / U.length).toFixed(1) : null;
+  // groups & modules present
+  const gNames = GROUPS.map(g => g[0]).concat(["其他"]).filter(g => U.some(r => r.grp[g]));
+  const mNames = [...new Set(U.flatMap(r => Object.keys(r.mod)))].sort((a, b) => modOrder(a) - modOrder(b));
+  const qsAll = practicedQs(); const tagged = qsAll.filter(q => (qs(q.id).kp || []).length); const byRule = tagged.filter(q => qs(q.id).kpBy === "rule").length, byAi = tagged.filter(q => qs(q.id).kpBy === "ai").length;
+  const kpR = kpRollup(U); const kpRows = Object.values(kpR);
   const ord = x => KP.order.has(x.path) ? KP.order.get(x.path) : 1e6;
   const kidsOf = pth => kpRows.filter(x => x.path.split("/").slice(0, -1).join("/") === pth).sort((a, b) => ord(a) - ord(b) || a.path.localeCompare(b.path));
-  const kpMeter = x => { const acc = pct(x.ok, x.n); return `<div class="meter" data-tip="${esc(x.path)}：${x.ok}/${x.n} 答对"><span class="kpname">${esc(x.path.split("/").pop())}</span><div class="track"><div class="fill" style="width:${acc}%;--c:${acc >= 70 ? "var(--good)" : acc >= 50 ? "var(--accent)" : "var(--bad)"}"></div></div><span class="v">${acc}% <span class="faint">(${x.n})</span></span></div>`; };
+  const kpMeter = (x, wide) => { const acc = pct(x.ok, x.n); const tr = U.length > 1 ? U.map(r => x.by[r.id] ? pct(x.by[r.id].ok, x.by[r.id].n) + "%" : "—").join(" → ") : ""; return `<div class="meter" data-tip="${esc(x.path)}：${x.ok}/${x.n} 答对${x.tn ? `，平均 ${Math.round(x.t / x.tn)} 秒/题` : ""}${tr ? `；各次：${tr}` : ""}"><span class="kpname" ${wide ? `style="width:15em" title="${esc(x.path)}"` : ""}>${esc(wide ? kpShort(x.path) : x.path.split("/").pop())}</span><div class="track"><div class="fill" style="width:${acc}%;--c:${acc >= 70 ? "var(--good)" : acc >= 50 ? "var(--accent)" : "var(--bad)"}"></div></div><span class="v">${acc}% <span class="faint">(${x.ok}/${x.n})</span></span></div>`; };
   const kpNode = (x, d) => { const kids = kidsOf(x.path); return kids.length ? `<details class="kpd" ${d === 0 ? "open" : ""}><summary>${kpMeter(x)}</summary><div class="kpkids">${kids.map(k => kpNode(k, d + 1)).join("")}</div></details>` : `<div class="kpleaf">${kpMeter(x)}</div>`; };
-  const weak = kpRows.filter(x => x.n >= 2 && x.path.split("/").length >= 3 && !kidsOf(x.path).length).sort((a, b) => pct(a.ok, a.n) - pct(b.ok, b.n) || b.n - a.n).slice(0, 8);
-  return `
-  <h2 class="section-title" style="margin-top:0">所有练习 · 各模块累计</h2>
-  <section class="card pad">${moduleBars(mod)}</section>
-  <h2 class="section-title">每次练习</h2>
-  <section class="card pad tblwrap"><table class="t"><thead><tr><th>时间</th><th>试卷</th><th>正确率</th><th>用时</th>${MODULES.filter(m => done.some(a => a.summary.byMod[m])).map(m => `<th>${esc(m)}</th>`).join("")}<th></th></tr></thead><tbody>
-    ${done.map(a => `<tr><td class="num">${fmtDate(a.finishedAt)}</td><td>${esc(a.title)}${a.mode === "redo" ? ' <span class="chip">重做</span>' : ""}</td><td class="num">${a.summary.acc}%</td><td class="num">${fmtT(a.summary.time)}</td>${MODULES.filter(m => done.some(x => x.summary.byMod[m])).map(m => { const b = a.summary.byMod[m]; return `<td class="num">${b ? `${pct(b.ok, b.n)}% · ${fmtT(b.t)}` : "—"}</td>`; }).join("")}<td><button class="btn sm" data-act="report" data-id="${a.id}">报告</button></td></tr>`).join("")}
-  </tbody></table></section>
-  ${weak.length ? `<h2 class="section-title">最薄弱的知识点</h2><section class="card pad">${weak.map(x => `<div class="kpleaf">${kpMeter(x).replace(`<span class="kpname">${esc(x.path.split("/").pop())}</span>`, `<span class="kpname" style="width:16em" title="${esc(x.path)}">${esc(kpShort(x.path))}</span>`)}</div>`).join("")}</section>` : ""}
-  <h2 class="section-title">知识点正确率</h2>
-  <section class="card pad">${kpRows.length ? kidsOf("").map(x => kpNode(x, 0)).join("") : `<p class="small muted">还没有给题目标知识点。在解析页点“选择知识点”（或“AI 推荐”），这里会按 模块 › 专题 › 知识点 汇总正确率，括号里是做过的题数。</p>`}</section>`;
+  const weak = kpRows.filter(x => x.n >= 2 && pct(x.ok, x.n) < 70 && x.path.split("/").length >= 2 && !kidsOf(x.path).length && !x.path.startsWith("自定义")).sort((a, b) => pct(a.ok, a.n) - pct(b.ok, b.n) || b.n - a.n).slice(0, 8);
+  const strong = kpRows.filter(x => x.n >= 3 && x.path.split("/").length >= 2 && !kidsOf(x.path).length && pct(x.ok, x.n) >= 80 && !x.path.startsWith("自定义")).sort((a, b) => pct(b.ok, b.n) - pct(a.ok, a.n) || b.n - a.n).slice(0, 5);
+  const ovDoc = memoDoc("__overall"); const rule = overallRule(O);
+  const untag = qsAll.length - tagged.length;
+  return head + `
+  <section class="card pad"><div class="kpi">
+    <div><b>${U.length}</b><span>统计的练习</span></div>
+    <div><b>${avgAcc}<small style="font-size:14px">%</small></b><span>平均正确率</span></div>
+    ${avgScore ? `<div><b style="color:var(--accent)">${avgScore}<small style="font-size:14px;color:var(--ink3)">/${sameMax}</small></b><span>平均估分</span></div>` : ""}
+    ${last ? `<div><b>${last.acc}<small style="font-size:14px">%</small></b><span>最近一次正确率 ${prev ? "· 较上次 " + delta(last.acc - prev.acc, "") : ""}</span></div>` : ""}
+    <div><b>${avgSec != null ? avgSec + '<small style="font-size:14px">秒</small>' : "—"}</b><span>平均每题用时</span></div>
+  </div></section>
+
+  <h2 class="section-title">变化趋势</h2>
+  <div class="ov-grid">
+    <section class="card pad"><div class="ch-t">正确率</div>${lineChart(U.map(r => ({ label: r.label, v: r.acc, tip: `${r.a.title}：${r.acc}%（${r.a.summary.ok}/${r.a.summary.n}）` })), { fmt: v => Math.round(v) + "%", yMin: 0, yMax: 100 })}</section>
+    ${U.some(r => r.score != null) ? `<section class="card pad"><div class="ch-t">估分${sameMax ? `（满分 ${sameMax}）` : "（按满分折算成百分）"}</div>${lineChart(U.map(r => ({ label: r.label, v: r.score == null ? null : sameMax ? r.score : Math.round(r.score / r.max * 1000) / 10, tip: `${r.a.title}：${r.score}/${r.max}` })), { fmt: (v, ax) => ax ? Math.round(v) : (Math.round(v * 10) / 10), yMin: 0, yMax: sameMax || 100, color: "var(--good)" })}</section>` : ""}
+    <section class="card pad"><div class="ch-t">平均每题用时（秒）</div>${lineChart(U.map(r => ({ label: r.label, v: r.timeBad ? null : Math.round(r.avgT), tip: `${r.a.title}：平均 ${Math.round(r.avgT)} 秒/题，总 ${fmtDur(r.a.summary.time)}` })), { fmt: v => Math.round(v), yMin: 0, color: "var(--mark)", empty: "没有正常计时的练习" })}${U.some(r => r.timeBad) ? `<p class="small faint" style="margin:4px 0 0">灰色标签的练习平均每题不到 ${SLOW_SEC} 秒（多半是对答案录入），不计入速度。</p>` : ""}</section>
+  </div>
+
+  <h2 class="section-title">能力变化</h2>
+  <section class="card pad tblwrap"><table class="t ab">
+    <thead><tr><th>模块</th><th>最近一次</th><th>正确率</th><th>较上次</th><th>每题用时</th><th>趋势</th><th>累计</th></tr></thead>
+    <tbody>${gNames.map(g => {
+      const has = U.filter(r => r.grp[g]); const l = has[has.length - 1], p = has[has.length - 2];
+      const la = pct(l.grp[g].ok, l.grp[g].n), pa = p ? pct(p.grp[g].ok, p.grp[g].n) : null;
+      const lt = [...has].reverse().find(r => !r.timeBad); const sum = has.reduce((s, r) => ({ n: s.n + r.grp[g].n, ok: s.ok + r.grp[g].ok }), { n: 0, ok: 0 });
+      return `<tr><td><b>${esc(g)}</b></td><td>${stars(la)}</td><td class="num">${la}%</td><td class="num">${pa == null ? '<span class="faint">—</span>' : delta(la - pa)}</td><td class="num">${lt ? Math.round(lt.grp[g].t / lt.grp[g].n) + " 秒" : "—"}</td><td>${spark(U.map(r => r.grp[g] ? pct(r.grp[g].ok, r.grp[g].n) : null))}</td><td class="num">${pct(sum.ok, sum.n)}% <span class="faint">(${sum.ok}/${sum.n})</span></td></tr>`;
+    }).join("")}</tbody></table>
+    <p class="small faint" style="margin:8px 0 0">星级按最近一次正确率：每 20% 一颗星。“政治与常识”包含政治理论、常识判断和综合知识。</p></section>
+
+  <h2 class="section-title">各模块 × 每套卷</h2>
+  <section class="card pad tblwrap"><table class="t heat">
+    <thead><tr><th>模块</th>${U.map(r => `<th title="${esc(r.a.title)}">${esc(r.label)}</th>`).join("")}<th>合计</th></tr></thead>
+    <tbody>${mNames.map(m => { const sum = U.reduce((s, r) => r.mod[m] ? { n: s.n + r.mod[m].n, ok: s.ok + r.mod[m].ok } : s, { n: 0, ok: 0 }); return `<tr><td><b>${esc(m)}</b></td>${U.map(r => { const x = r.mod[m]; if (!x) return `<td class="faint">—</td>`; const acc = pct(x.ok, x.n); return `<td class="${heat(acc)}" title="${esc(r.a.title)} · ${esc(m)}：${x.ok}/${x.n}"><b>${acc}%</b><br><span class="small">${r.timeBad ? "—" : Math.round(x.t / x.n) + "秒/题"}</span></td>`; }).join("")}<td class="${heat(pct(sum.ok, sum.n))}"><b>${pct(sum.ok, sum.n)}%</b><br><span class="small">${sum.ok}/${sum.n}</span></td></tr>`; }).join("")}</tbody></table></section>
+
+  <h2 class="section-title">知识点得分率</h2>
+  <section class="card pad">
+    <div class="row" style="flex-wrap:wrap"><span class="small muted grow">做过的 ${qsAll.length} 道题里，${tagged.length} 道已有知识点（按解析自动识别 ${byRule}${byAi ? `，AI 判断 ${byAi}` : ""}，其余为你手动选的）${untag ? `，<b>${untag}</b> 道还没识别出来` : ""}。点题目解析页可以改。</span>
+      ${S.sample ? `${untag ? `<button class="btn sm primary" data-act="ovAiTag" data-v="rest">AI 补全剩下 ${untag} 道</button>` : ""}<button class="btn sm ghost" data-act="ovAiTag" data-v="all" title="不会改动你手动选的知识点">AI 重新判断全部</button>` : `<span class="small faint">在首页填入 AI Key 后可以用 AI 补全。</span>`}</div>
+    ${weak.length ? `<h3 class="sub-t">得分率最低</h3>${weak.map(x => `<div class="kpleaf">${kpMeter(x, true)}</div>`).join("")}` : ""}
+    ${strong.length ? `<h3 class="sub-t">掌握较好</h3>${strong.map(x => `<div class="kpleaf">${kpMeter(x, true)}</div>`).join("")}` : ""}
+    <h3 class="sub-t">全部知识点</h3>
+    ${kpRows.length ? kidsOf("").map(x => kpNode(x, 0)).join("") : `<p class="small muted">还没有知识点数据。</p>`}
+    <p class="small faint" style="margin:8px 0 0">括号里是 答对/做过 的题数；把手指放在条上可以看到每次练习的得分率变化。</p>
+  </section>
+
+  <h2 class="section-title">整体总结</h2>
+  <section class="card pad">
+    <div class="ana" style="white-space:pre-wrap">${esc(rule)}</div>
+    <div class="row" style="margin:12px 0 8px;flex-wrap:wrap"><b class="grow">${S.sample ? "AI 整体总结" : "我的整体总结"}</b>
+      ${S.sample ? `<button class="btn primary sm" data-act="ovAi">${ovDoc.summary ? "重新生成" : "AI 生成整体总结"}</button>` : ""}<button class="btn ghost sm" data-act="ovRule">按数据生成建议待办</button></div>
+    <textarea class="sumBox" data-pid="__overall" rows="9" placeholder="${S.sample ? "点“AI 生成整体总结”，AI 会读所有练习的正确率、用时、知识点得分率和你的单卷总结，写一份阶段总结。" : "可以在这里写阶段总结。"}">${esc(ovDoc.summary || "")}</textarea>
+    <div class="small faint" style="margin-top:6px" id="sumState-__overall">${ovDoc.summaryAt ? "已保存 · " + fmtDate(ovDoc.summaryAt) : ""}</div>
+    ${sugBox("__overall")}
+  </section>
+
+  <h2 class="section-title">参与统计的练习</h2>
+  <section class="card pad tblwrap"><table class="t"><thead><tr><th>计入</th><th>交卷时间</th><th>试卷</th><th>正确率</th><th>估分</th><th>总用时</th><th>每题</th><th></th></tr></thead><tbody>
+    ${R.map(r => `<tr class="${r.excl ? "faint" : ""}"><td><input type="checkbox" data-act="ovExcl" data-id="${r.id}" ${r.excl ? "" : "checked"} aria-label="计入统计"></td><td class="num">${fmtDate(r.a.finishedAt)}</td><td>${esc(r.a.title)}${r.a.mode === "redo" ? ' <span class="chip">重做</span>' : ""}${r.timeBad ? ' <span class="chip mark" title="平均每题不到 15 秒，速度不计入">用时异常</span>' : ""}</td><td class="num">${r.acc}%</td><td class="num">${r.score != null ? `${r.score}/${r.max}` : "—"}</td><td class="num">${fmtT(r.a.summary.time)}</td><td class="num">${Math.round(r.avgT)}秒</td><td><button class="btn sm" data-act="report" data-id="${r.id}">报告</button></td></tr>`).join("")}
+  </tbody></table><p class="small faint" style="margin:8px 0 0">取消勾选的练习不计入上面的趋势和得分率。</p></section>`;
 }
+afterRender.stats = () => afterRender.report();
 
 /* =====================================================================
    PDF export (pages drawn on canvas, then packed with jsPDF)
@@ -1915,7 +2430,7 @@ async function exportRedo(items, opt) {
   B.y += 20;
   if (opt.ana || opt.note) for (let i = 0; i < items.length; i++) {
     const { q, s } = items[i]; B.rule(); B.text(`${i + 1}. 答案 ${q.answer || "?"}　${qLabel(q)}`, { size: 24, bold: true, gap: 6 });
-    if (opt.ana && q.analysis) B.text(q.analysis, { size: 22, color: "#333", gap: 8 });
+    if (opt.ana && q.anaImg) await B.image(q.anaImg); else if (opt.ana && q.analysis) B.text(q.analysis, { size: 22, color: "#333", gap: 8 });
     if (opt.note && (s.note || "").trim()) { B.text("我的笔记", { size: 22, bold: true, color: "#8a6a00", gap: 2 }); B.text(s.note, { size: 22, color: "#5a4300", gap: 8 }); }
   }
   const blob = await B.blob(); await saveFile(`${title}.pdf`, blob);
@@ -1935,7 +2450,9 @@ async function exportNotesPdf(items, opt = {}) {
     const mine = D.attempts.find(x => x.finishedAt && x.answers?.[q.id]?.c)?.answers[q.id].c;
     if (mine) B.text(`我的答案 ${mine}　正确答案 ${q.answer || "?"}`, { size: 22, color: mine === q.answer ? "#1f8456" : "#c43d2b", gap: 6 });
     B.text("✎ 笔记", { size: 22, bold: true, color: "#8a6a00", gap: 2 }); B.text(s.note || "", { size: 24, color: "#3b2f00", gap: 8 });
-    if (opt.ana && q.analysis) { B.text("解析", { size: 22, bold: true, color: "#555", gap: 2 }); B.text(q.analysis, { size: 21, color: "#444", gap: 8 }); }
+    if (s.noteAnaImg && q.anaImg) await B.image(q.anaImg);
+    if (opt.ana && q.anaImg && !s.noteAnaImg) { B.text("解析", { size: 22, bold: true, color: "#555", gap: 2 }); await B.image(q.anaImg); }
+    else if (opt.ana && q.analysis && !q.anaImg) { B.text("解析", { size: 22, bold: true, color: "#555", gap: 2 }); B.text(q.analysis, { size: 21, color: "#444", gap: 8 }); }
     if ((s.kp || []).length) B.text("知识点：" + s.kp.map(kpShort).join("、"), { size: 20, color: "#777", gap: 6 });
     B.rule();
   }
@@ -1992,6 +2509,32 @@ document.addEventListener("click", async e => {
       D.attempts = D.attempts.filter(a => a.pid !== id); await dbDel("papers", id); D.papers = D.papers.filter(p => p.id !== id); toast("已删除"); render(); break;
     }
     case "backup": backup(); break;
+    case "reAns": {
+      const pid = id; const inp = document.createElement("input"); inp.type = "file"; inp.accept = "application/pdf";
+      inp.onchange = async () => {
+        const file = inp.files[0]; if (!file) return;
+        try {
+          toast("正在读取答案解析…", 60000);
+          const pdf = await openPdf(file); const { txt, pages: apages, map } = await pdfFullText(pdf, m => toast(m, 60000)); const r = parseAnswers(txt);
+          let nAna = 0, nAns = 0, nImg = 0, imgs = {};
+          try {
+            const reg = anaRegions(apages, map, r.spans); const want = paperQids(pid).map(x => D.questions.get(x)).filter(q => ANA_IMG_MOD(q.module) && reg[q.n]).map(q => q.n);
+            if (want.length) { const blobs = await cropAnalyses(pdf, reg, want, (k, t) => toast(`正在截取解析原图 ${k}/${t} 页…`, 60000)); for (const n of Object.keys(blobs)) { toast(`正在保存解析原图…`, 60000); imgs[n] = await putImage(blobs[n]); } }
+          } catch (e) { console.warn("解析截图失败", e); }
+          for (const qid of paperQids(pid)) {
+            const q = D.questions.get(qid); const na = r.ana[q.n], nl = r.ans[q.n]; let ch = false;
+            if (na && na !== q.analysis) { q.analysis = na.slice(0, 20000); nAna++; ch = true; }
+            if (nl && nl !== q.answer) { q.answer = nl; nAns++; ch = true; }
+            if (imgs[q.n]) { q.anaImg = imgs[q.n]; nImg++; ch = true; }
+            if (ch) queueWrite("questions", qid, q);
+          }
+          const p = paperOf(pid); if (p) { p.answered = paperQids(pid).filter(x => D.questions.get(x).answer).length; queueWrite("papers", pid, p); }
+          try { autoTagAll(pid); } catch (e) { console.warn(e); }
+          toast(`更新了 ${nAna} 题的解析${nImg ? `，截取了 ${nImg} 题的解析原图` : ""}${nAns ? `，${nAns} 题的答案有变化` : ""}`, 5000); render();
+        } catch (e) { toast("读取失败：" + (e.message || e), 5000); }
+      };
+      inp.click(); break;
+    }
     case "aiSave": { const c = readAiForm(); if (!c.key || !c.base || !c.model) return toast("请填完整：接口地址、模型和 API Key"); try { localStorage.setItem("cuotiben.ai", JSON.stringify(c)); } catch { return toast("浏览器不允许保存设置"); } S.sample = makeSample(c); toast("已保存，AI 功能已启用"); render(); break; }
     case "aiClear": { try { localStorage.removeItem("cuotiben.ai"); } catch {} S.sample = null; toast("已清除 API Key"); render(); break; }
     case "aiTest": { const c = readAiForm(); if (!c.key || !c.base || !c.model) return toast("请填完整：接口地址、模型和 API Key"); const st = $("#aiState"); st.textContent = "测试中…"; try { const res = await makeSample(c).json('请输出 {"ok": true}'); st.textContent = res && res.ok ? "连接成功，记得点保存" : "能连上，但返回内容不对，可换个模型试试"; } catch (e) { st.textContent = "测试失败：" + (e.message || e.code); } break; }
@@ -1999,8 +2542,15 @@ document.addEventListener("click", async e => {
     case "memoAdd": addMemo(); break;
     case "memoDel": { if (el.dataset.confirm !== "1") { el.dataset.confirm = "1"; el.textContent = "确认删除"; return; } delMemo(el.dataset.pid, id); drawMemo(); if (UI.view === "report") render(); break; }
     case "openQ1": { const a = D.attempts.find(x => x.id === UI.reportId); const list = a.qids.map(q => ({ qid: q, mine: a.answers[q]?.c, t: a.answers[q]?.t })); openReview(list, Math.max(0, a.qids.indexOf(id)), "report"); break; }
-    case "sumRule": { const n = addTodos(ruleTodos(el.dataset.pid, el.dataset.aid)); toast(n ? `已生成 ${n} 条待办` : "没有新的待办可生成"); render(); break; }
-    case "sumAi": { el.disabled = true; el.textContent = "AI 思考中…（约半分钟）"; try { const n = await aiSummary(el.dataset.pid, el.dataset.aid); toast(`总结已写好，新增 ${n} 条待办`); } catch (e) { toast(aiErr(e)); } render(); break; }
+    case "sumRule": { const n = setSuggestions(el.dataset.pid, ruleSummary(el.dataset.pid, el.dataset.aid), ruleTodos(el.dataset.pid, el.dataset.aid).filter(t => !/随手记整理/.test(t.text))); toast(n ? `总结已生成，有 ${n} 条建议待你确认` : "总结已生成"); render(); break; }
+    case "sumAi": { el.disabled = true; el.textContent = "AI 思考中…（约半分钟）"; try { const n = await aiSummary(el.dataset.pid, el.dataset.aid); toast(n ? `总结已写好，有 ${n} 条建议待你确认` : "总结已写好"); } catch (e) { toast(aiErr(e)); } render(); break; }
+    case "sugAdd": case "sugDrop": case "sugAll": case "sugNone": {
+      const pid = el.dataset.pid, doc = memoDoc(pid); const pick = x => x.state === "pending" && (act === "sugAll" || act === "sugNone" || x.id === id);
+      const toAdd = (act === "sugAdd" || act === "sugAll") ? (doc.sugs || []).filter(pick) : [];
+      const n = addTodos(toAdd.map(({ id, state, ...t }) => ({ ...t, pid: pid === "__overall" ? null : pid })));
+      saveMemoDoc({ ...doc, sugs: (doc.sugs || []).map(x => pick(x) ? { ...x, state: toAdd.includes(x) ? "added" : "dropped" } : x) });
+      if (n) toast(`已加入 ${n} 条待办`); render(); break;
+    }
     case "todoAdd": { const i = $("#todoIn"); const text = i.value.trim(); if (!text) return; addTodos([{ text, pid: $("#todoPaper").value || null, src: "manual" }]); render(); setTimeout(() => $("#todoIn")?.focus(), 0); break; }
     case "todoToggle": { const t = D.todos.find(x => x.id === id); if (!t) break; t.done = el.checked; t.doneAt = t.done ? Date.now() : null; queueWrite("todos", t.id, t); setTimeout(() => { render(); }, 250); break; }
     case "todoDel": { if (el.dataset.confirm !== "1") { el.dataset.confirm = "1"; el.textContent = "删除？"; return; } D.todos = D.todos.filter(x => x.id !== id); await dbDel("todos", id).catch(() => {}); render(); break; }
@@ -2031,14 +2581,14 @@ document.addEventListener("click", async e => {
     case "modAdd": { const R = buildRegions(IMP.pages, IMP.st); const last = IMP.st.modules[IMP.st.modules.length - 1]; IMP.st.modules.push({ name: "常识判断", from: Math.min((last?.from || 0) + 10, R.qs[R.qs.length - 1]?.n || 1) }); render(); break; }
     case "modDel": IMP.st.modules.splice(+el.dataset.i, 1); render(); break;
     // practice
-    case "pPick": { const qid = P.a.qids[P.a.cur]; const r = P.a.answers[qid] ||= {}; r.c = r.c === el.dataset.l ? undefined : el.dataset.l; queueSave(); $$(".opt").forEach(b => b.setAttribute("aria-pressed", b.dataset.l === r.c)); if (r.c && P.a.cur < P.a.qids.length - 1 && !P.ink) setTimeout(() => { if (P && P.a.answers[qid].c === r.c) practiceGo(P.a.cur + 1); }, 260); break; }
+    case "pPick": { const qid = P.a.qids[P.a.cur]; const r = P.a.answers[qid] ||= {}; r.c = r.c === el.dataset.l ? undefined : el.dataset.l; queueSave(); $$(".opt").forEach(b => b.setAttribute("aria-pressed", b.dataset.l === r.c)); if (r.c && P.a.cur < P.a.qids.length - 1) setTimeout(() => { if (P && P.a.answers[qid].c === r.c) practiceGo(P.a.cur + 1); }, 260); break; }
     case "pNext": practiceGo(P.a.cur + 1); break;
     case "pPrev": practiceGo(P.a.cur - 1); break;
     case "pFlag": { const qid = P.a.qids[P.a.cur]; const r = P.a.answers[qid] ||= {}; r.f = !r.f; queueSave(); el.classList.toggle("marked", r.f); el.setAttribute("aria-pressed", r.f); el.innerHTML = r.f ? ICON.starf : ICON.star; break; }
     case "pInk": P.ink = !P.ink; renderPractice(); break;
     case "inkTool": P.inkTool = el.dataset.t; $$('[data-act="inkTool"]').forEach(b => b.setAttribute("aria-pressed", b.dataset.t === P.inkTool)); break;
-    case "inkUndo": { const st = INK.get(P.a.qids[P.a.cur]); st?.pop(); P.redrawInk?.(); break; }
-    case "inkClear": { const st = INK.get(P.a.qids[P.a.cur]); if (st) st.length = 0; P.redrawInk?.(); break; }
+    case "inkUndo": { const q = D.questions.get(P.a.qids[P.a.cur]) || {}; const mine = [INK.get(q.id), q.mat ? INK.get("mat:" + (q.matKey || q.mat)) : null].filter(Boolean); P.inkHist ||= []; for (let i = P.inkHist.length - 1; i >= 0; i--) { const arr = P.inkHist[i]; if (mine.includes(arr) && arr.length) { arr.pop(); P.inkHist.splice(i, 1); break; } } P.redrawInk?.(); break; }
+    case "inkClear": { const q = D.questions.get(P.a.qids[P.a.cur]) || {}; const st = INK.get(q.id); if (st) st.length = 0; if (q.mat) { const ms = INK.get("mat:" + (q.matKey || q.mat)); if (ms) ms.length = 0; } P.redrawInk?.(); toast(q.mat ? "已清空本题和材料上的笔迹" : "已清空"); break; }
     case "pCard": showSheet(`<div class="row"><h3 class="grow" style="font-family:var(--f-display)">答题卡</h3><button class="btn primary" data-act="pSubmit">交卷</button></div><div class="legend" style="margin-top:8px"><span style="--c:var(--accent)">已答</span><span style="--c:var(--line)">未答</span><span style="--c:var(--mark)">标记</span></div>${answerCard(P.a)}`); break;
     case "pJump": closeSheet(); practiceGo(+el.dataset.i); break;
     case "pExit": commitTime(); await dbPut("attempts", P.a.id, P.a).catch(() => {}); closePractice(); toast("进度已保存，可以随时继续"); render(); break;
@@ -2063,6 +2613,8 @@ document.addEventListener("click", async e => {
     case "rvFlag": { const qid = UI.reviewList[UI.reviewIdx].qid; await setQS(qid, { flag: !qs(qid).flag }); render(); break; }
     case "copySel": { const sel = window.getSelection(); const box = $("#anaBox"); const t = sel && box && box.contains(sel.anchorNode) ? sel.toString() : ""; appendNote(t); break; }
     case "copyAll": appendNote($("#anaBox")?.textContent || ""); break;
+    case "anaMode": UI.anaMode = el.dataset.v; render(); break;
+    case "anaImgNote": { const qid = UI.reviewList[UI.reviewIdx].qid; const on = !qs(qid).noteAnaImg; await setQS(qid, { noteAnaImg: on, noteAt: Date.now() }); toast(on ? "已把解析原图加入笔记" : "已从笔记移除原图"); render(); break; }
     case "saveAna": { const qid = UI.reviewList[UI.reviewIdx].qid; const q = D.questions.get(qid); q.analysis = $("#anaEdit").value.trim(); await dbPut("questions", qid, q); render(); break; }
     case "kpOpen": kpOpen(UI.reviewList[UI.reviewIdx].qid); break;
     case "kpToggle": await kpToggle(el.dataset.p); break;
@@ -2070,23 +2622,35 @@ document.addEventListener("click", async e => {
     case "kpDone": closeSheet(); render(); break;
     case "kpAi": { el.disabled = true; el.textContent = "AI 思考中…"; try { const got = await aiTag(UI.reviewList[UI.reviewIdx].qid); toast(got.length ? "已添加：" + got.map(kpShort).join("、") : "AI 没找到合适的知识点，请手动选择"); } catch (e) { toast(aiErr(e)); } render(); break; }
     case "bookAi": await aiBatch(selectedInOrder(UI.bookSel, s => s.inBook)); break;
-    case "tagDel": { const qid = UI.reviewList[UI.reviewIdx].qid; const kp = [...(qs(qid).kp || [])]; kp.splice(+el.dataset.i, 1); await setQS(qid, { kp }); render(); break; }
+    case "ovSort": UI.ovSort = el.dataset.v; render(); break;
+    case "ovRedo": UI.ovRedo = el.checked; render(); break;
+    case "ovExcl": { const m = { ...(D.meta.overall || {}), id: "overall" }; const ex = new Set(m.excl || []); el.checked ? ex.delete(id) : ex.add(id); m.excl = [...ex]; D.meta.overall = m; queueWrite("meta", "overall", m); render(); break; }
+    case "ovAiTag": {
+      const all = el.dataset.v === "all"; const list = practicedQs().filter(q => { const s = qs(q.id); if (s.kpBy === "user" || (!s.kpBy && (s.kp || []).length)) return false; return all || !(s.kp || []).length; });
+      if (!list.length) { toast("没有需要 AI 判断的题"); break; }
+      $$('[data-act="ovAiTag"]').forEach(b => b.disabled = true);
+      try { const n = await aiTagMany(list, (d, t) => toast(`AI 判断知识点 ${d}/${t}…`, 120000)); toast(`AI 已为 ${n} 道题判断知识点`, 4000); } catch (e) { toast(aiErr(e), 5000); }
+      render(); break;
+    }
+    case "ovAi": { el.disabled = true; el.textContent = "AI 思考中…（约半分钟）"; try { const n = await aiOverall(overall()); toast(n ? `整体总结已写好，有 ${n} 条建议待你确认` : "整体总结已写好"); } catch (e) { toast(aiErr(e)); } render(); break; }
+    case "ovRule": { const O = overall(); const n = setSuggestions("__overall", memoDoc("__overall").summary || overallRule(O), overallTodos(O)); toast(n ? `有 ${n} 条建议待你确认` : "暂时没有新的建议"); render(); break; }
+    case "tagDel": { const qid = UI.reviewList[UI.reviewIdx].qid; const kp = [...(qs(qid).kp || [])]; kp.splice(+el.dataset.i, 1); await setQS(qid, { kp, kpBy: "user" }); render(); break; }
     // book & notes
     case "grpToggle": { const m = el.dataset.m; UI.bookOpen.has(m) ? UI.bookOpen.delete(m) : UI.bookOpen.add(m); render(); break; }
     case "grpSel": case "qSel": case "selAll": {
-      const kind = el.dataset.k, sel = kind === "book" ? UI.bookSel : UI.noteSel; const fil = kind === "book" ? (s => s.inBook) : (s => (s.note || "").trim());
+      const kind = el.dataset.k, sel = kind === "book" ? UI.bookSel : UI.noteSel; const fil = kind === "book" ? (s => s.inBook) : (s => (s.note || "").trim() || s.noteAnaImg);
       const groups = bookItems(fil);
       const ids = act === "qSel" ? [id] : act === "grpSel" ? (groups.find(g => g[0] === el.dataset.m)?.[1] || []).map(x => x.q.id) : groups.flatMap(g => g[1]).map(x => x.q.id);
       ids.forEach(x => el.checked ? sel.add(x) : sel.delete(x)); const sy = window.scrollY; render(); window.scrollTo(0, sy); break;
     }
-    case "openQ": { const kind = el.dataset.k; const fil = kind === "book" ? (s => s.inBook) : (s => (s.note || "").trim()); const all = bookItems(fil).flatMap(g => g[1]); openReview(all.map(x => ({ qid: x.q.id })), all.findIndex(x => x.q.id === id), kind); break; }
+    case "openQ": { const kind = el.dataset.k; const fil = kind === "book" ? (s => s.inBook) : (s => (s.note || "").trim() || s.noteAnaImg); const all = bookItems(fil).flatMap(g => g[1]); openReview(all.map(x => ({ qid: x.q.id })), all.findIndex(x => x.q.id === id), kind); break; }
     case "bookReview": { const items = selectedInOrder(UI.bookSel, s => s.inBook); openReview(items.map(x => ({ qid: x.q.id })), 0, "book"); break; }
     case "bookRedo": { const items = selectedInOrder(UI.bookSel, s => s.inBook); const mods = [...new Set(items.map(x => x.q.module || "未分类"))]; startAttempt({ qids: items.map(x => x.q.id), title: `错题重做 · ${mods.join("、")}`, mode: "redo" }); break; }
     case "bookExport": exportDialog(); break;
     case "doExport": { const opt = { ana: $("#exAna").checked, note: $("#exNote").checked, gap: $("#exGap").checked }; closeSheet(); await exportRedo(selectedInOrder(UI.bookSel, s => s.inBook), opt); break; }
     case "notesPdf": showSheet(`<h3 style="font-family:var(--f-display)">导出笔记 PDF</h3><p class="small muted">每道题：题目（含材料）、正确答案、你的答案、我的笔记、知识点。</p><label class="row small" style="margin:10px 0"><input type="checkbox" id="nxAna"> 同时附上解析</label><div class="row" style="margin-top:14px"><button class="btn grow" data-act="closeSheet">取消</button><button class="btn primary grow" data-act="doNotesPdf">生成 PDF</button></div>`); break;
-    case "doNotesPdf": { const ana = $("#nxAna").checked; closeSheet(); await exportNotesPdf(selectedInOrder(UI.noteSel, s => (s.note || "").trim()), { ana }); break; }
-    case "notesMd": await exportNotesMd(selectedInOrder(UI.noteSel, s => (s.note || "").trim())); break;
+    case "doNotesPdf": { const ana = $("#nxAna").checked; closeSheet(); await exportNotesPdf(selectedInOrder(UI.noteSel, s => (s.note || "").trim() || s.noteAnaImg), { ana }); break; }
+    case "notesMd": await exportNotesMd(selectedInOrder(UI.noteSel, s => (s.note || "").trim() || s.noteAnaImg)); break;
   }
 });
 document.addEventListener("change", async e => {
@@ -2106,6 +2670,14 @@ document.addEventListener("keydown", e => {
 // tooltips for meters
 document.addEventListener("pointerover", e => { const el = e.target.closest("[data-tip]"); let t = $("#tipEl"); if (!el) { if (t) t.hidden = true; return; } if (!t) { t = document.createElement("div"); t.id = "tipEl"; t.className = "tip"; document.body.appendChild(t); } t.textContent = el.dataset.tip; t.hidden = false; const r = el.getBoundingClientRect(); t.style.left = Math.min(window.innerWidth - 250, r.left) + "px"; t.style.top = (r.top - 34) + "px"; });
 window.addEventListener("resize", () => { if (P && P.ink) setupInk(); });
+// pause the clock while the page is in the background or the screen is locked
+document.addEventListener("visibilitychange", () => {
+  if (!P || !$(".prac")) return;
+  if (document.hidden) { commitTime(); P.hiddenAt = Date.now(); queueSave(); }
+  else if (P.hiddenAt) { P.enter = Date.now(); P.hiddenAt = null; }
+});
+window.addEventListener("error", e => { console.error(e.error || e.message); toast("出了点问题：" + (e.message || "未知错误") + "。可以截图发给开发者", 6000); });
+window.addEventListener("unhandledrejection", e => { const r = e.reason || {}; console.error(r); toast("出了点问题：" + (r.message || r.code || "未知错误"), 6000); });
 document.addEventListener("scroll", () => { const t = $("#tipEl"); if (t) t.hidden = true; }, true);
 
 /* =====================================================================
@@ -2114,6 +2686,7 @@ document.addEventListener("scroll", () => { const t = $("#tipEl"); if (t) t.hidd
 (async function boot() {
   await initStorage();
   try { await loadData(); const m = await dbAll("meta"); D.meta = Object.fromEntries(m.map(x => [x.id, x])); } catch (e) { console.error(e); toast("读取数据失败：" + (e.message || e.code)); }
+  try { autoTagAll(); } catch (e) { console.warn(e); }
   render();
 })();
 </script>
