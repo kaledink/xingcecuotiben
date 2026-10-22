@@ -597,6 +597,7 @@ td.h-good{background:var(--good-soft)} td.h-mid{background:var(--mark-soft)} td.
 <script src="vendor/pdf.min.js"></script>
 <script src="vendor/pdf.worker.min.js"></script>
 <script src="vendor/jspdf.umd.min.js"></script>
+<script src="github-sync.js"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -1394,7 +1395,7 @@ function vHome() {
     ${cards}
   </div>
   ${`<h2 class="section-title">数据与备份</h2><div class="card pad row"><span class="grow small muted">${S.cloud ? "试卷、做题记录和笔记已保存到你的 Claude 账号，iPad、电脑上打开这个页面看到的是同一份数据。也可以另存一份备份文件。" : "数据只保存在这台设备的浏览器里，换设备或清除浏览器数据前请先导出备份。iPad / iPhone 建议用 Safari 打开后「分享 → 添加到主屏幕」，当作 App 使用，数据更不容易被系统清理。"}</span><button class="btn" data-act="backup">导出备份</button><label class="btn">导入备份<input type="file" accept=".json" id="restoreIn" hidden></label></div>`}
-  ${!window.claude ? aiSettingsCard() : ""}`;
+  ${!window.claude ? githubSyncCard() + aiSettingsCard() : ""}`;
 }
 afterRender.home = () => {
   const r = $("#restoreIn"); if (r) r.onchange = () => restoreBackup(r.files[0]);
@@ -2478,7 +2479,9 @@ async function backup() {
 async function restoreBackup(file) {
   if (!file) return;
   try {
-    const data = JSON.parse(await file.text()); const map = {};
+    const data = JSON.parse(await file.text());
+    if (data.format === "cuotiben-snapshot-v1") { await GitHubSync.restore(data); toast("完整备份已恢复"); return; }
+    const map = {};
     toast("正在恢复…", 60000);
     for (const [ref, du] of Object.entries(data.images || {})) { const b = await (await fetch(du)).blob(); map[ref] = await putImage(b); }
     for (const q of data.questions) { q.img = map[q.img] || q.img; q.mat = map[q.mat] || q.mat; }
