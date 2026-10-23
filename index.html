@@ -1801,6 +1801,50 @@ async function applyDataCorrections(patch) {
   await loadData(); D.meta = Object.fromEntries((await dbAll("meta")).map(x=>[x.id,x]));
   await regradeCompletedAttempts(); return true;
 }
+// Apply reviewed image replacements atomically, retaining every existing user field.
+async function applyImageRepairs(patch) {
+  if (!patch || patch.format !== "cuotiben-image-repairs-v1" || typeof patch.revision !== "string" || !Array.isArray(patch.questions) || !patch.images) throw new Error("题目图片修订格式无效");
+  if (!paperOf(patch.paperId)) return false;
+  const key="image-repair:"+patch.revision;
+  if (D.meta[key]) return false;
+  if (document.querySelector(".prac") || WQ.running || WQ.list.length) throw new Error("请先退出做题并等待本机保存完成，再应用图片修订");
+  if (!S.idb || S.db) throw new Error("请在独立网页中应用图片修订");
+  const ids=new Set(), refs=new Set(), rows=[];
+  for (const edit of patch.questions) {
+    const q=D.questions.get(edit.id);
+    if (!q || q.pid!==patch.paperId || q.n!==edit.n || ids.has(edit.id)) throw new Error("修订题号与本机试卷不符，未修改记录");
+    if (typeof edit.text!=="string" || typeof edit.img!=="string" || (edit.mat!==null && typeof edit.mat!=="string") || (edit.mat && typeof edit.matKey!=="string")) throw new Error("题目图片关联格式无效");
+    ids.add(edit.id);refs.add(edit.img);if(edit.mat)refs.add(edit.mat);
+    rows.push({...q,img:edit.img,mat:edit.mat,matKey:edit.matKey,text:edit.text});
+  }
+  const blobs=[];
+  for (const ref of refs) {
+    const image=patch.images[ref];
+    if (!/^i:repair-[a-f0-9]{64}$/.test(ref) || !image || !["image/jpeg","image/png"].includes(image.type)) throw new Error("修订图片缺失或类型无效");
+    const bytes=Uint8Array.from(atob(image.data),c=>c.charCodeAt(0));
+    const digest=[...new Uint8Array(await crypto.subtle.digest("SHA-256",bytes))].map(x=>x.toString(16).padStart(2,"0")).join("");
+    if(ref!=="i:repair-"+digest) throw new Error("修订图片校验失败，未修改记录");
+    blobs.push([ref.slice(2),new Blob([bytes],{type:image.type})]);
+  }
+  if (document.querySelector(".prac") || WQ.running || WQ.list.length) throw new Error("本机状态发生变化，请退出做题并保存后重试");
+  for(let i=0;i<rows.length;i++) {
+    const current=D.questions.get(rows[i].id), edit=rows[i];
+    if(!current || current.pid!==patch.paperId || current.n!==edit.n)throw new Error("本机试卷发生变化，未应用图片修订");
+    rows[i]={...current,img:edit.img,mat:edit.mat,matKey:edit.matKey,text:edit.text};
+  }
+  const marker={id:key,revision:patch.revision,sourceSha256:patch.sourceSha256 || null,appliedAt:Date.now()};
+  await new Promise((resolve,reject)=>{
+    const tx=S.idb.transaction(["questions","blobs","meta"],"readwrite");
+    tx.oncomplete=resolve;tx.onabort=()=>reject(tx.error||new Error("图片修订未保存"));tx.onerror=()=>{};
+    try {
+      for(const row of rows){const body={...row};delete body.id;tx.objectStore("questions").put(body,row.id);}
+      for(const [key,blob]of blobs)tx.objectStore("blobs").put(blob,key);
+      const body={...marker};delete body.id;tx.objectStore("meta").put(body,marker.id);
+    }catch(e){tx.abort();reject(e);}
+  });
+  await loadData();D.meta=Object.fromEntries((await dbAll("meta")).map(x=>[x.id,x]));
+  return true;
+}
 async function regradeCompletedAttempts() {
   const attempts = [], states = new Map();
   for (const a of D.attempts) {

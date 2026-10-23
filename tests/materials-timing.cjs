@@ -35,11 +35,12 @@ const cloudPatch=structuredClone(timing.patch);cloudPatch.revision='test-cloud';
 await p.route('https://api.github.com/**',async route=>{
  const req=route.request();assert.equal(req.method(),'GET');assert.equal(req.headers().authorization,'Bearer test-key');
  const path=new URL(req.url()).pathname;
+ if(path.endsWith('/contents/cuotiben-image-repairs.json'))return route.fulfill({status:404,json:{}});
  if(path.endsWith('/contents/cuotiben-corrections.json'))return route.fulfill({json:{content:Buffer.from(JSON.stringify(cloudPatch)).toString('base64')}});
  if(path.endsWith('/git/ref/heads/main'))return route.fulfill({json:{object:{sha:'head'}}});
  return route.fulfill({json:{private:true,default_branch:'main'}});
 });
-await p.locator('#githubRepo').fill('test/private');await p.locator('#githubToken').fill('test-key');await p.locator('[data-github=corrections]').click();await p.locator('#githubStatus').filter({hasText:'云端用时与模块修订已核对并应用'}).waitFor();
+await p.locator('#githubRepo').fill('test/private');await p.locator('#githubToken').fill('test-key');await p.locator('[data-github=corrections]').click();await p.locator('#githubStatus').filter({hasText:'云端修订检查完成'}).waitFor();
 await p.reload();await p.locator('#githubRepo').waitFor();assert.equal(await p.evaluate(id=>D.attempts.find(x=>x.id===id).summary.time,aid),3787.51);assert.deepEqual(errors,[]);
 console.log('PASS: page-top questions/crops, gap numbering, five-question material range, narrow left layout, shared ink/scroll, private timing patch/reload/idempotency without inventing question times');
 }finally{await b.close();}})().catch(e=>{console.error(e);process.exit(1)});

@@ -39,12 +39,31 @@ const GitHubSync = (() => {
   }
   async function applySavedCorrections(c) {
     const file = await api(c, `/contents/cuotiben-corrections.json?ref=${encodeURIComponent(c.branch)}`, {allowMissing:true});
-    if (!file) return false;
-    const patch = JSON.parse(new TextDecoder().decode(decode(file.content)));
-    return applyDataCorrections(patch);
+    let changed=false;
+    if(file)changed=await applyDataCorrections(JSON.parse(new TextDecoder().decode(decode(file.content))));
+    return (await applySavedImageRepairs(c)) || changed;
+  }
+  async function applySavedImageRepairs(c) {
+    const file=await api(c, `/contents/cuotiben-image-repairs.json?ref=${encodeURIComponent(c.branch)}`, {allowMissing:true});
+    if(!file)return false;
+    const manifest=JSON.parse(new TextDecoder().decode(decode(file.content)));
+    if(manifest.format!=="cuotiben-image-repairs-manifest-v1" || !Array.isArray(manifest.parts) || typeof manifest.revision!=="string" || !/^[a-f0-9]{64}$/.test(manifest.digest))throw new Error("云端题目修订清单无效");
+    if(!paperOf(manifest.paperId) || D.meta["image-repair:"+manifest.revision])return false;
+    const chunks=[];
+    for(let i=0;i<manifest.parts.length;i++){
+      const sha=manifest.parts[i];if(!/^[a-f0-9]{40}$/.test(sha))throw new Error("图片修订分块无效");
+      status(`正在下载完整题目和共用材料：${i+1}/${manifest.parts.length}`);
+      chunks.push(decode((await api(c,`/git/blobs/${sha}`)).content));
+    }
+    const length=chunks.reduce((sum,x)=>sum+x.length,0),bytes=new Uint8Array(length);let offset=0;
+    for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
+    if(length!==manifest.bytes || await hash(bytes)!==manifest.digest)throw new Error("题目修订完整性校验失败，未修改本机图片");
+    const patch=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes));
+    if(patch.revision!==manifest.revision || patch.paperId!==manifest.paperId)throw new Error("修订版本不匹配");
+    return applyImageRepairs(patch);
   }
   async function corrections() {
-    const c=form(); await connect(c); render(); status('云端用时与模块修订已核对并应用，作答与图片保留');
+    const c=form(); await connect(c); render(); status('云端修订检查完成；适用的题目图片、模块与用时已应用，作答和笔记保留');
   }
   async function remote(c, head) {
     const commit = await api(c, `/git/commits/${head}`);

@@ -4,7 +4,7 @@ const {chromium}=require('playwright-core'); const assert=require('node:assert/s
  const sha=()=> (++seq).toString(16).padStart(40,'0'); const requests=[];
  await p.route('https://api.github.com/**',async route=>{const r=route.request(),path=new URL(r.url()).pathname.replace('/repos/test/private',''); const body=r.postDataJSON();requests.push({path,body});let result;
  if(path==='')result={private:!pub,default_branch:'main'};
- else if(path.startsWith('/contents/cuotiben-corrections.json'))return route.fulfill({status:404,json:{}});
+ else if(path.startsWith('/contents/cuotiben-corrections.json') || path.startsWith('/contents/cuotiben-image-repairs.json'))return route.fulfill({status:404,json:{}});
  else if(path==='/git/ref/heads/main')result={object:{sha:head}};
  else if(path.startsWith('/git/commits/')&&r.method()==='GET')result={tree:{sha:'tree'}};
  else if(path==='/git/trees/tree')result={tree:manifest?[{path:'cuotiben-data.json',sha:manifest}]:[]};
