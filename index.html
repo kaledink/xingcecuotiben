@@ -1137,9 +1137,11 @@ function buildRegions(pages, st) {
   const regionFrom = (i) => {
     const m = mk[i], nx = mk[i + 1];
     const slices = [];
-    const endPage = nx ? nx.page : m.page;
+    const endPage = nx ? nx.page : pages.length - 1;
     for (let p = m.page; p <= endPage; p++) {
-      const top = p === m.page ? Math.max(0, m.y - 6) : st.head * H(p);
+      // Continuations may begin with options or images inside the header band.
+      // Keep the page top rather than silently dropping part of the question.
+      const top = p === m.page ? Math.max(0, m.y - 6) : 0;
       const bot = nx && p === nx.page ? Math.min(nx.y - 2, st.foot * H(p)) : st.foot * H(p);
       if (bot - top > 10) slices.push({ page: p, top, bot });
     }
