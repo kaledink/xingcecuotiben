@@ -46,6 +46,7 @@ const GitHubSync = (() => {
   }
   async function snapshot() {
     if (WQ.running || WQ.list.length || (typeof P !== 'undefined' && P && document.querySelector('.prac'))) throw Error('请先退出做题界面，并等待本地保存完成');
+    await regradeCompletedAttempts();
     const collections = Object.fromEntries(await Promise.all(COLS.map(async col => [col, await dbAll(col)])));
     const images = {};
     const keys = await idbReq('blobs', 'readonly', s => s.getAllKeys());
@@ -113,7 +114,7 @@ const GitHubSync = (() => {
       const store = tx.objectStore('blobs'); store.clear(); for (const [key,blob] of blobs) store.put(blob,key);
       } catch(e) { tx.abort(); reject(e); }
     });
-    S.urlCache.clear(); await loadData(); D.meta = Object.fromEntries((await dbAll('meta')).map(x => [x.id,x]));
+    S.urlCache.clear(); await loadData(); await regradeCompletedAttempts(); D.meta = Object.fromEntries((await dbAll('meta')).map(x => [x.id,x]));
     render();
   }
   async function exportAll() { await saveFile(`错题本完整备份-${Date.now()}.json`,JSON.stringify(await snapshot())); status('完整备份已导出，包含笔记、待办和所有图片'); }

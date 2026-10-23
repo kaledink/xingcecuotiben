@@ -1729,9 +1729,8 @@ async function submitAttempt() {
   if (P.submitting) return; P.submitting = true;
   try { await doSubmit(); } catch (e) { console.error(e); P.submitting = false; toast("交卷出错：" + (e.message || e.code || e), 6000); }
 }
-async function doSubmit() {
-  commitTime(); closeSheet(); toast("正在交卷…", 20000);
-  const a = P.a; a.finishedAt = Date.now();
+// Recompute derived grading only; never change the user's selections or timings.
+function gradeAttempt(a) {
   const byMod = {}; let ok = 0, no = 0, blank = 0, unk = 0;
   for (const qid of a.qids) {
     const q = D.questions.get(qid) || {}; const r = a.answers[qid] ||= {};
@@ -1744,6 +1743,51 @@ async function doSubmit() {
   for (const qid of a.qids) { const q = D.questions.get(qid) || {}; const m = modOf(q); if (!m || m.pts == null) { scored = false; break; } maxScore += m.pts; if (a.answers[qid].res === "ok") score += m.pts; }
   if (a.mode === "paper") { const p = paperOf(a.pid); (p?.modules || []).forEach(m => { if (m.min && byMod[m.name]) byMod[m.name].sug = (byMod[m.name].sug || 0) + m.min * 60; }); }
   a.summary = { ok, no, blank, unk, n: a.qids.length, acc: pct(ok, graded), time: a.elapsed, byMod, score: scored ? Math.round(score * 10) / 10 : null, maxScore: scored ? Math.round(maxScore * 10) / 10 : null };
+}
+async function regradeCompletedAttempts() {
+  const attempts = [], states = new Map();
+  for (const a of D.attempts) {
+    if (!a.finishedAt || a.qids.some(id => !D.questions.has(id))) continue;
+    const before = JSON.stringify({summary:a.summary,results:a.qids.map(id => a.answers[id]?.res)});
+    const old = new Map(a.qids.map(id => [id,a.answers[id]?.res]));
+    gradeAttempt(a);
+    if (before === JSON.stringify({summary:a.summary,results:a.qids.map(id => a.answers[id]?.res)})) continue;
+    attempts.push(a);
+    for (const id of a.qids) {
+      const prior = old.get(id), next = a.answers[id].res;
+      if (prior === next) continue;
+      const state = {...(states.get(id) || qs(id)),id};
+      const wasWrong = prior === "no" || (prior === "blank" && a.mode === "paper");
+      const nowWrong = next === "no" || (next === "blank" && a.mode === "paper");
+      state.wrongCount = Math.max(0,(state.wrongCount || 0) + Number(nowWrong) - Number(wasWrong));
+      if (!state.lastAt || state.lastAt <= a.finishedAt) { state.lastRes = next; state.lastAt = a.finishedAt; }
+      if (nowWrong) { state.inBook = true; state.bookAt ||= a.finishedAt; }
+      // Remove only an automatic entry traceable to this stale result. Keep notes/flags.
+      if (wasWrong && !nowWrong && !state.wrongCount && state.bookAt === a.finishedAt) state.inBook = false;
+      states.set(id,state);
+    }
+  }
+  if (!attempts.length) return 0;
+  if (S.idb && !S.db) await new Promise((resolve,reject) => {
+    const tx = S.idb.transaction(["attempts","qstate"],"readwrite");
+    tx.oncomplete = resolve; tx.onabort = () => reject(tx.error || new Error("重新判分保存失败")); tx.onerror = () => {};
+    try {
+      for (const [col,rows] of [["attempts",attempts],["qstate",[...states.values()]]]) for (const row of rows) {
+        const body = JSON.parse(JSON.stringify({...row,k:row.id})); delete body.id; tx.objectStore(col).put(body,row.id);
+      }
+    } catch(e) { tx.abort(); reject(e); }
+  });
+  else {
+    for (const a of attempts) await dbPut("attempts",a.id,a);
+    for (const state of states.values()) await dbPut("qstate",state.id,state);
+  }
+  for (const [id,state] of states) D.qstate.set(id,state);
+  return attempts.length;
+}
+async function doSubmit() {
+  commitTime(); closeSheet(); toast("正在交卷…", 20000);
+  const a = P.a; a.finishedAt = Date.now();
+  gradeAttempt(a);
   try { await dbPut("attempts", a.id, a); } catch (e) { console.warn(e); queueWrite("attempts", a.id, a); }
   // wrong book bookkeeping
   for (const qid of a.qids) {
@@ -2494,7 +2538,7 @@ async function restoreBackup(file) {
     for (const [ref, du] of Object.entries(data.images || {})) { const b = await (await fetch(du)).blob(); map[ref] = await putImage(b); }
     for (const q of data.questions) { q.img = map[q.img] || q.img; q.mat = map[q.mat] || q.mat; }
     for (const [col, list] of [["papers", data.papers], ["questions", data.questions], ["attempts", data.attempts], ["qstate", data.qstate]]) for (const x of list || []) await dbPut(col, x.id, x);
-    await loadData(); toast("备份已恢复"); render();
+    await loadData(); await regradeCompletedAttempts(); toast("备份已恢复"); render();
   } catch (e) { toast("恢复失败：" + e.message); }
 }
 
@@ -2541,6 +2585,7 @@ document.addEventListener("click", async e => {
           }
           const p = paperOf(pid); if (p) { p.answered = paperQids(pid).filter(x => D.questions.get(x).answer).length; queueWrite("papers", pid, p); }
           try { autoTagAll(pid); } catch (e) { console.warn(e); }
+          await regradeCompletedAttempts();
           toast(`更新了 ${nAna} 题的解析${nImg ? `，截取了 ${nImg} 题的解析原图` : ""}${nAns ? `，${nAns} 题的答案有变化` : ""}`, 5000); render();
         } catch (e) { toast("读取失败：" + (e.message || e), 5000); }
       };
@@ -2683,7 +2728,7 @@ document.addEventListener("change", async e => {
     q.choiceType = el.value;
     await dbPut("questions", qid, q); renderPractice();
   }
-  if (act === "rvSetAns") { const qid = UI.reviewList[UI.reviewIdx].qid; const q = D.questions.get(qid); q.answer = el.value; await dbPut("questions", qid, q); toast("答案已更新"); render(); }
+  if (act === "rvSetAns") { const qid = UI.reviewList[UI.reviewIdx].qid; const q = D.questions.get(qid); q.answer = el.value; await dbPut("questions", qid, q); await regradeCompletedAttempts(); toast("答案已更新，历史判分已同步"); render(); }
 });
 document.addEventListener("keydown", e => {
   if (!P || !$(".prac") || e.target.matches("input,textarea,select")) return;
@@ -2711,7 +2756,7 @@ document.addEventListener("scroll", () => { const t = $("#tipEl"); if (t) t.hidd
    ===================================================================== */
 (async function boot() {
   await initStorage();
-  try { await loadData(); const m = await dbAll("meta"); D.meta = Object.fromEntries(m.map(x => [x.id, x])); } catch (e) { console.error(e); toast("读取数据失败：" + (e.message || e.code)); }
+  try { await loadData(); await regradeCompletedAttempts(); const m = await dbAll("meta"); D.meta = Object.fromEntries(m.map(x => [x.id, x])); } catch (e) { console.error(e); toast("读取数据失败：" + (e.message || e.code)); }
   try { autoTagAll(); } catch (e) { console.warn(e); }
   render();
 })();
