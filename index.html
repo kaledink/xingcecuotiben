@@ -597,6 +597,7 @@ td.h-good{background:var(--good-soft)} td.h-mid{background:var(--mark-soft)} td.
 <script src="vendor/pdf.min.js"></script>
 <script src="vendor/pdf.worker.min.js"></script>
 <script src="vendor/jspdf.umd.min.js"></script>
+<script src="answer-parser.js?v=20261023-1"></script>
 <script src="github-sync.js?v=20261023-repair-verification2"></script>
 <script>
 "use strict";
@@ -1184,126 +1185,121 @@ async function ocrWorker(onProg) {
   await OCRW.setParameters({ tessedit_pageseg_mode: "6", preserve_interword_spaces: "1" });
   return OCRW;
 }
-async function ocrPage(page) {
-  const SC = 2.2, c = await renderPageCanvas(page, SC), vp = page.getViewport({ scale: 1 });
+async function ocrPage(page, { answerLayout = false } = {}) {
+  const vp0=page.getViewport({scale:1});
+  const SC = Math.min(3,Math.sqrt(12000000/(vp0.width*vp0.height))), c = await renderPageCanvas(page, SC), vp = page.getViewport({ scale: 1 });
+  if(answerLayout){
+    await OCRW.setParameters({tessedit_pageseg_mode:"3",preserve_interword_spaces:"1"});
+    const ctx=c.getContext("2d"),image=ctx.getImageData(0,0,c.width,c.height);
+    for(let i=0;i<image.data.length;i+=4){const gray=.299*image.data[i]+.587*image.data[i+1]+.114*image.data[i+2],v=Math.max(0,Math.min(255,(gray-128)*1.15+128));image.data[i]=image.data[i+1]=image.data[i+2]=v;}
+    ctx.putImageData(image,0,0);
+  }else await OCRW.setParameters({tessedit_pageseg_mode:"6",preserve_interword_spaces:"1"});
   const { data } = await OCRW.recognize(c, {}, { blocks: true, text: false });
   const lines = [];
   for (const b of data.blocks || []) for (const pa of b.paragraphs || []) for (const ln of pa.lines || []) {
     const t = (ln.text || "").replace(/\n/g, "").trim(); if (!t) continue; const bb = ln.bbox;
     const top = bb.y0 / SC, y = bb.y1 / SC;
-    lines.push({ text: t.replace(/(?<=[\u4e00-\u9fff，。、；：“”（）])\s+(?=[\u4e00-\u9fff，。、；：“”（）])/g, ""), c: toHalf(t.replace(/\s+/g, "")), x0: bb.x0 / SC, x1: bb.x1 / SC, y, top, h: y - top, items: [] });
+    lines.push({ text: t.replace(/(?<=[\u4e00-\u9fff，。、；：“”（）])\s+(?=[\u4e00-\u9fff，。、；：“”（）])/g, ""), c: toHalf(t.replace(/\s+/g, "")), confidence:ln.confidence,x0: bb.x0 / SC, x1: bb.x1 / SC, y, top, h: y - top, items: [] });
   }
   c.width = c.height = 0; lines.sort((a, b) => a.top - b.top);
-  return { w: vp.width, h: vp.height, lines, ocr: true };
+  return { w: vp.width, h: vp.height, lines, ocr: true, confidence:data.confidence };
 }
 /* OCR the pages of `pdf` whose text layer is missing (or all pages when force) */
 async function ocrPages(pdf, pages, { force = false, label = "卷子", onStep } = {}) {
-  const todo = pages.map((p, i) => i).filter(i => force || pages[i].lines.length < 3);
+  const todo = pages.map((p, i) => i).filter(i => force || !AnswerParser.quality(pages[i]).usable);
   if (!todo.length) return 0;
   onStep?.(`首次使用需要下载文字识别模型（约 6MB）…`, 0);
   await ocrWorker();
   for (let k = 0; k < todo.length; k++) {
     onStep?.(`正在识别${label}文字：第 ${k + 1}/${todo.length} 页（扫描版，每页几秒）`, k / todo.length);
-    pages[todo[k]] = await ocrPage(await pdf.getPage(todo[k] + 1));
+    const index=todo[k],original=pages[index],recognized=await ocrPage(await pdf.getPage(index+1),{answerLayout:label==="答案"});
+    if(force || AnswerParser.quality(recognized).score>=AnswerParser.quality(original).score)pages[index]=recognized;
+    else original.ocrWarning="OCR未优于原文字层，保留原文并等待核对";
   }
   return todo.length;
 }
 
 /* ---------- answer PDF parsing ---------- */
 async function pdfFullText(pdf, onStep) {
-  const pages = [];
-  for (let i = 1; i <= pdf.numPages; i++) pages.push(await pageLines(await pdf.getPage(i)));
-  if (pages.filter(p => p.lines.length >= 3).length < pdf.numPages * 0.5) await ocrPages(pdf, pages, { label: "答案", onStep });
-  let txt = ""; const map = [];
-  pages.forEach((p, pi) => {
-    const rights = p.lines.map(l => l.x1).sort((a, b) => a - b); const maxR = rights.length ? rights[Math.floor(rights.length * 0.9)] : p.w;
-    for (const l of p.lines) {
-      if (l.top / p.h < 0.03 || l.y / p.h > 0.975) continue;
-      map.push({ off: txt.length, page: pi, line: l });
-      txt += l.text.replace(/(?<=[一-鿿，。、；：“”（）])\s+(?=[一-鿿，。、；：“”（）])/g, "");
-      txt += (l.x1 >= maxR - p.w * 0.03 && !/[。！？：:”]$/.test(l.c)) ? "" : "\n";
+  const pages=[],warnings=[];
+  for(let i=1;i<=pdf.numPages;i++){
+    const page=await pdf.getPage(i);
+    try {pages.push(await pageLines(page));}
+    catch(e){const vp=page.getViewport({scale:1});pages.push({w:vp.width,h:vp.height,lines:[]});}
+  }
+  await ocrPages(pdf,pages,{label:"答案",onStep});
+  const repeats=new Map();
+  for(const p of pages)for(const text of new Set(p.lines.map(l=>l.text.trim())))repeats.set(text,(repeats.get(text)||0)+1);
+  let txt="";const map=[];
+  pages.forEach((p,pi)=>{
+    if(!AnswerParser.quality(p).usable || p.ocrWarning || (p.ocr && p.confidence<75))warnings.push(`第${pi+1}页文字识别质量需核对，请与原图比较`);
+    for(const l of AnswerParser.orderLines(p)){
+      const edge=l.top/p.h<.08||l.y/p.h>.92;
+      const header=edge&&repeats.get(l.text.trim())>=Math.max(2,pages.length*.6)&&/教育|资料|公众号|www\.|https?:|第.*页|试卷|参考答案/.test(l.text)&&!/^\s*\d{1,3}[.、．:：]|【答案】/.test(l.text);
+      if(header || edge&&/^\s*\d{1,4}\s*$/.test(l.text))continue;
+      map.push({off:txt.length,page:pi,line:l});txt+=l.text+"\n";
     }
-    txt += "\n";
+    txt+="\n";
   });
-  return { pages, txt, map };
+  return {pages,txt,map,warnings};
 }
 /* Split an answer-explanation text into per-question blocks.
    Pass 1 takes lines like "12.【答案】…" / "12.正确答案是…" (strong starts).
    Pass 2 fills the gaps with plain "13.…" line starts, accepting only the next expected number,
    so numbered sub-points inside one explanation are not mistaken for new questions. */
-function splitAnalysis(T) {
-  const cands = [];
-  const reAny = /(^|\n)[ \t]*(\d{1,3})\s*[.．、](?!\d)/g; let m;
-  while ((m = reAny.exec(T))) {
-    const at = m.index + m[1].length, after = T.slice(reAny.lastIndex, reAny.lastIndex + 12).replace(/^\s+/, "");
-    cands.push({ n: +m[2], at, strong: /^(【|答案|正确答案|故正确答案|〔|\[答案|解析)/.test(after) });
-  }
-  const strongNums = new Set(cands.filter(c => c.strong).map(c => c.n));
-  const starts = []; let lastN = 0;
-  for (const c of cands) {
-    if (c.n <= lastN) continue;
-    const ok = lastN === 0 ? (c.strong || (c.n <= 3 && !strongNums.has(c.n))) : c.strong ? c.n <= lastN + 6 : (c.n === lastN + 1 && !strongNums.has(c.n));
-    if (ok) { starts.push(c); lastN = c.n; }
-  }
-  const blocks = starts.map((s, i) => {
-    let b = T.slice(s.at, i + 1 < starts.length ? starts[i + 1].at : T.length);
-    const cut = b.search(/\n\s*(第[二三四]部分|主观题|申论)/); if (cut > 0) b = b.slice(0, cut);
-    return b;
-  });
-  return { starts, blocks };
-}
+function splitAnalysis(T) { return AnswerParser.splitAnalysis(T); }
 function normalizeAnswer(value) { return [...new Set(String(value || "").toUpperCase().match(/[A-D]/g) || [])].sort().join(""); }
 function answersEqual(a, b) { return !!normalizeAnswer(a) && normalizeAnswer(a) === normalizeAnswer(b); }
 function isMultiChoice(q) {
   if (q.choiceType) return q.choiceType === "multi";
   return normalizeAnswer(q.answer).length > 1 || /不定项|多项选择|多选题/.test((q.module || "") + " " + (q.text || ""));
 }
-function blockAnswer(block) {
-  const a = block.match(/【答案】\s*([A-D](?:[、，,\s]*[A-D])*)/) || block.match(/\[答案\]\s*([A-D](?:[、，,\s]*[A-D])*)/) || block.match(/(?:正确答案|答案)\s*(?:为|是|选)?\s*[：:]?\s*([A-D](?:[、，,\s]*[A-D])*)(?![A-Za-z])/);
-  if (a) return normalizeAnswer(a[1]);
-  const lead = block.replace(/^\s*\d{1,3}\s*[.．、]\s*/, "").match(/^([A-D]+)(?![A-Za-z]|项|选项|[、.．,，:：])/);
-  return lead ? normalizeAnswer(lead[1]) : null;
-}
-function parseAnswers(txt) {
-  const T = toHalf(txt);
-  const ans = {}, ana = {}, spans = {};
-  for (const m of T.matchAll(/(\d{1,3})\s*[-—–~～]\s*(\d{1,3})\s*[：:.、]?\s*([A-D](?:\s?[A-D]){1,9})(?![A-Za-z])/g)) {
-    const a = +m[1], letters = m[3].replace(/\s/g, "");
-    [...letters].forEach((ch, i) => { if (!ans[a + i]) ans[a + i] = ch; });
-  }
-  for (const line of T.split("\n")) {
-    const ms = [...line.matchAll(/(\d{1,3})\s*[.．、:：]\s*([A-D]+)(?![A-Za-z一-鿿])/g)];
-    if (ms.length >= 3) ms.forEach(m => { if (!ans[+m[1]]) ans[+m[1]] = normalizeAnswer(m[2]); });
-  }
-  const { starts, blocks } = splitAnalysis(T);
-  starts.forEach((s, i) => {
-    const block = blocks[i];
-    const letter = blockAnswer(block);
-    if (letter) ans[s.n] = letter;
-    ana[s.n] = block.replace(/^\s*\d{1,3}\s*[.．、]\s*/, "").replace(/\n{3,}/g, "\n\n").trim();
-    spans[s.n] = [s.at, s.at + block.replace(/\s+$/, "").length];
+function blockAnswer(block) { return AnswerParser.blockAnswer(block); }
+function parseAnswers(txt,options) { return AnswerParser.parse(txt,options); }
+
+function reviewAnswerImport(result,questions) {
+  return new Promise(resolve=>{
+    const rows=questions.map(q=>{
+      const value=result.ans[q.n] || "",evidence=result.candidates[q.n] || [],conflict=new Set(evidence.map(x=>x.answer)).size>1;
+      return `<tr><td>${q.n}</td><td>${esc(q.answer || "—")}</td><td><input aria-label="第${q.n}题识别答案" data-answer-review="${q.n}" value="${esc(value)}" placeholder="${conflict ? "冲突，需核对" : "未可靠识别"}" style="width:100px"><div class="small faint">${esc(evidence.map(x=>x.source+"："+x.answer).join("；"))}</div></td><td><label><input type="checkbox" data-answer-use="${q.n}" ${!q.answer&&value&&!conflict ? "checked" : ""}> 更新答案</label></td><td>${result.ana[q.n] ? `<label><input type="checkbox" data-analysis-use="${q.n}" checked> 更新解析</label><details><summary>查看 / 修改解析文字</summary><textarea aria-label="第${q.n}题解析文字" data-analysis-review="${q.n}" rows="5">${esc(result.ana[q.n])}</textarea></details>` : `<span class="small faint">未可靠匹配解析</span>`}</td></tr>`;
+    }).join("");
+    showSheet(`<h3>核对标准答案与解析</h3><p>题号按原文匹配，不顺移补齐。已有标准答案默认保留；只有勾选“更新答案”的题目才会修改。</p>${result.warnings.length ? `<details open><summary class="warn">${result.warnings.length} 项需要核对</summary><div style="max-height:110px;overflow:auto">${result.warnings.map(x=>`<div class="small warn">${esc(x)}</div>`).join("")}</div></details>` : ""}<div style="overflow:auto;max-height:55vh"><table><thead><tr><th>题号</th><th>已有答案</th><th>识别候选</th><th>是否采用</th><th>解析文字及原图</th></tr></thead><tbody>${rows}</tbody></table></div><div class="row" style="margin-top:12px"><button class="btn" id="answerReviewCancel">取消，不修改</button><span class="small warn grow" id="answerReviewError"></span><button class="btn primary" id="answerReviewApply">应用勾选项</button></div>`);
+    const bg=$("#sheetBg");const finish=value=>{bg.remove();resolve(value);};
+    bg.onclick=e=>{if(e.target===bg)finish(null);};
+    $("#answerReviewCancel",bg).onclick=()=>finish(null);
+    $("#answerReviewApply",bg).onclick=()=>{
+      const selected={...result,ans:{},ana:{},spans:{}};
+      for(const q of questions){
+        if($(`[data-answer-use="${q.n}"]`,bg).checked){
+          const value=toHalf($(`[data-answer-review="${q.n}"]`,bg).value.trim()).toUpperCase();
+          if(!/^[A-D]+$/.test(value)){$("#answerReviewError",bg).textContent=`请为第${q.n}题填写有效的 A—D 选项，或取消更新答案`;return;}
+          selected.ans[q.n]=normalizeAnswer(value);
+        }
+        if($(`[data-analysis-use="${q.n}"]`,bg)?.checked){selected.ana[q.n]=$(`[data-analysis-review="${q.n}"]`,bg).value;selected.spans[q.n]=result.spans[q.n];}
+      }
+      finish(selected);
+    };
   });
-  return { ans, ana, spans };
 }
 
 /* ---------- analysis screenshots (keep formulas that text extraction loses) ---------- */
 const ANA_IMG_MOD = m => /资料|综合分析|数量|数字|数学|图形/.test(m || "");
-function anaRegions(pages, map, spans) {
-  const lineAt = off => { let lo = 0, hi = map.length - 1, r = 0; while (lo <= hi) { const mid = (lo + hi) >> 1; if (map[mid].off <= off) { r = mid; lo = mid + 1; } else hi = mid - 1; } return r; };
-  const body = pi => map.filter(m => m.page === pi);
-  const out = {};
-  for (const [n, [a, b]] of Object.entries(spans)) {
-    if (!map.length) continue;
-    const i0 = lineAt(a), i1 = lineAt(Math.max(a, b - 1)); const s0 = map[i0], s1 = map[i1], next = map[i1 + 1];
-    const slices = [];
-    for (let pi = s0.page; pi <= s1.page; pi++) {
-      const P = pages[pi], ls = body(pi); if (!ls.length) continue;
-      const x0 = Math.max(0, Math.min(...ls.map(m => m.line.x0)) - 8), x1 = Math.min(P.w, Math.max(...ls.map(m => m.line.x1)) + 8);
-      const top = pi === s0.page ? s0.line.top - 4 : ls[0].line.top - 4;
-      let bot; if (pi === s1.page) bot = next && next.page === pi ? next.line.top - 2 : Math.min(P.h * 0.975, ls[ls.length - 1].line.y + P.h * 0.12); else bot = P.h * 0.975;
-      if (bot - top > 4) slices.push({ page: pi, top: Math.max(0, top), bot: Math.min(P.h, bot), x0, x1 });
+function anaRegions(pages,map,spans) {
+  const out={};
+  for(const [n,[start,end]]of Object.entries(spans)){
+    let first=0;for(let i=0;i<map.length;i++){if(map[i].off<=start)first=i;else break;}
+    const relevant=map.filter((entry,i)=>i>=first&&entry.off<end),groups=[];
+    for(const entry of relevant){const previous=groups[groups.length-1];if(previous&&previous[0].page===entry.page&&previous[0].line.column===entry.line.column)previous.push(entry);else groups.push([entry]);}
+    const slices=[];
+    for(const group of groups){
+      const first=group[0],last=group[group.length-1],p=pages[first.page],column=first.line.column;
+      const body=map.filter(x=>x.page===first.page&&x.line.column===column);
+      const next=body.find(x=>x.off>last.off);
+      const x0=Math.max(0,Math.min(...body.map(x=>x.line.x0))-8),x1=Math.min(p.w,Math.max(...body.map(x=>x.line.x1))+8);
+      const top=Math.max(0,first.line.top-4),bot=next?Math.min(p.h,next.line.top-2):p.h*.985;
+      if(bot>top+4)slices.push({page:first.page,top,bot,x0,x1});
     }
-    if (slices.length) out[n] = slices;
+    if(slices.length)out[n]=slices;
   }
   return out;
 }
@@ -1436,7 +1432,7 @@ function vImport() {
   const st = IMP.st, R = buildRegions(IMP.pages, st);
   const mis = R.qs.find(q => q.marker.num && q.marker.num !== q.n);
   const withAns = R.qs.filter(q => IMP.ans[q.n]).length;
-  const ansStr = R.qs.map(q => IMP.ans[q.n] || "_").join("");
+  const ansStr = R.qs.map(q => IMP.ans[q.n] || "_").join(" ");
   const mods = st.modules.map((m, i) => `<div class="modrow"><select data-act="modName" data-i="${i}">${[...new Set([...MODULES, m.name])].map(x => `<option ${x === m.name ? "selected" : ""}>${esc(x)}</option>`).join("")}</select><input type="number" min="1" value="${m.from}" data-act="modFrom" data-i="${i}" aria-label="起始题号"><button class="btn ghost sm" data-act="modDel" data-i="${i}" aria-label="删除模块">×</button></div>`).join("");
   return `
   <div class="row"><button class="btn ghost" data-act="impBack">← 重新选择文件</button><h2 class="grow" style="font-family:var(--f-display)">${esc(IMP.title)}</h2></div>
@@ -1468,7 +1464,7 @@ function vImport() {
         <div style="display:flex;flex-direction:column;gap:6px">${mods || '<span class="small faint">还没有模块，全部算作“未分类”。</span>'}</div>
       </div>
       <div class="card pad">
-        <b class="small">答案串</b><p class="small muted" style="margin:4px 0 8px">从第 ${st.firstNum} 题起依次填写，未知用 _。解析匹配到 ${Object.keys(IMP.ana).length} 题。</p>
+        <b class="small">答案串</b><p class="small muted" style="margin:4px 0 8px">从第 ${st.firstNum} 题起每题用空格分隔，多选写 ABCD，未知用 _。解析匹配到 ${Object.keys(IMP.ana).length} 题。</p>
         <textarea id="ansStr" rows="3" class="num" style="letter-spacing:.12em">${esc(ansStr)}</textarea>
       </div>
       <div class="card pad">
@@ -1492,8 +1488,8 @@ afterRender.import = () => {
   $("#headR").onchange = e => { IMP.st.head = +e.target.value / 100; render(); };
   $("#footR").onchange = e => { IMP.st.foot = +e.target.value / 100; render(); };
   $("#ansStr").onchange = e => {
-    const s = toHalf(e.target.value.toUpperCase()).replace(/[^A-D_]/g, ""); const R = buildRegions(IMP.pages, IMP.st);
-    R.qs.forEach((q, i) => { const ch = s[i]; if (ch && ch !== "_") IMP.ans[q.n] = ch; else delete IMP.ans[q.n]; });
+    const raw=toHalf(e.target.value.toUpperCase()).trim(),R=buildRegions(IMP.pages,IMP.st); const s=/[\s,，;；]/.test(raw)?raw.split(/[\s,，;；]+/).filter(Boolean):raw.length===R.qs.length?[...raw]:[raw];
+    R.qs.forEach((q, i) => { const ch = s[i]; if (ch && /^[A-D]+$/.test(ch)) IMP.ans[q.n] = normalizeAnswer(ch); else delete IMP.ans[q.n]; });
     render();
   };
 };
@@ -1543,7 +1539,9 @@ async function impAnalyze() {
     IMP.ans = {}; IMP.ana = {}; IMP.anaReg = null; IMP.ansPdf = null;
     if (IMP.ansFile) {
       IMP.busy = "正在读取答案…"; setImpProgress();
-      const apdf = await openPdf(IMP.ansFile); const { txt, pages: apages, map } = await pdfFullText(apdf, step); const r = parseAnswers(txt); IMP.ans = r.ans; IMP.ana = r.ana;
+      const apdf = await openPdf(IMP.ansFile); const { txt, pages: apages, map, warnings } = await pdfFullText(apdf, step);
+      const questions=buildRegions(IMP.pages,IMP.st).qs,parsed=parseAnswers(txt,{expectedNumbers:questions.map(q=>q.n)});parsed.warnings.push(...warnings);
+      const r=await reviewAnswerImport(parsed,questions);if(!r){IMP.busy="";render();return;}IMP.ans=r.ans;IMP.ana=r.ana;
       try { IMP.anaReg = anaRegions(apages, map, r.spans); IMP.ansPdf = apdf; } catch (e) { console.warn(e); IMP.anaReg = null; }
     }
     IMP.busy = ""; IMP.step = 2; IMP.previews = []; render();
@@ -2737,10 +2735,12 @@ document.addEventListener("click", async e => {
         const file = inp.files[0]; if (!file) return;
         try {
           toast("正在读取答案解析…", 60000);
-          const pdf = await openPdf(file); const { txt, pages: apages, map } = await pdfFullText(pdf, m => toast(m, 60000)); const r = parseAnswers(txt);
+          const pdf = await openPdf(file); const { txt, pages: apages, map, warnings } = await pdfFullText(pdf, m => toast(m, 60000));
+          const questions=paperQids(pid).map(id=>D.questions.get(id)),parsed=parseAnswers(txt,{expectedNumbers:questions.map(q=>q.n)});parsed.warnings.push(...warnings);
+          const r=await reviewAnswerImport(parsed,questions);if(!r){toast("已取消，标准答案和解析未修改");return;}
           let nAna = 0, nAns = 0, nImg = 0, imgs = {};
           try {
-            const reg = anaRegions(apages, map, r.spans); const want = paperQids(pid).map(x => D.questions.get(x)).filter(q => reg[q.n]).map(q => q.n);
+            const reg = anaRegions(apages, map, r.spans); const want = paperQids(pid).map(x => D.questions.get(x)).filter(q => r.ana[q.n] !== undefined && reg[q.n]).map(q => q.n);
             if (want.length) { const blobs = await cropAnalyses(pdf, reg, want, (k, t) => toast(`正在截取解析原图 ${k}/${t} 页…`, 60000)); for (const n of Object.keys(blobs)) { toast(`正在保存解析原图…`, 60000); imgs[n] = await putImage(blobs[n]); } }
           } catch (e) { console.warn("解析截图失败", e); }
           for (const qid of paperQids(pid)) {
