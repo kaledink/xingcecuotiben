@@ -694,6 +694,7 @@ function aiSettingsCard() {
 function readAiForm() { return { provider: $("#aiProv").value, base: $("#aiBase").value.trim(), model: $("#aiModel").value.trim(), key: $("#aiKey").value.trim() }; }
 async function initStorage() {
   S.idb = await idbOpen();
+  try { const mode=localStorage.getItem("cuotiben.analysisMode");if(["txt","img"].includes(mode))UI.anaMode=mode; } catch {}
   try {
     if (window.claude && claude.use) {
       const [db, assets, dl, sample] = await Promise.all([claude.use("db"), claude.use("assets"), claude.use("downloads"), claude.use("sample")]);
@@ -1573,9 +1574,9 @@ async function impCommit() {
     for (const k of keys) { const parts = pieces[k].filter(Boolean); refs[k] = parts.length ? await putImage(await stitch(parts)) : null; up++; IMP.prog = 55 + Math.round(up / keys.length * 35); setImpProgress(); }
     const anaRefs = {};
     if (IMP.anaReg && IMP.ansPdf) try {
-      const want = R.qs.filter(q => ANA_IMG_MOD(q.mod) && IMP.anaReg[q.n]).map(q => q.n);
+      const want = R.qs.filter(q => IMP.anaReg[q.n]).map(q => q.n);
       if (want.length) {
-        IMP.busy = "正在截取资料分析等题的解析原图…"; setImpProgress();
+        IMP.busy = "正在截取各题解析原图…"; setImpProgress();
         const blobs = await cropAnalyses(IMP.ansPdf, IMP.anaReg, want);
         for (const n of Object.keys(blobs)) anaRefs[n] = await putImage(blobs[n]);
       }
@@ -1927,13 +1928,17 @@ function vReview() {
     </section>
     <section style="display:flex;flex-direction:column;gap:14px;min-width:0">
       <div class="card pad">
-        ${(() => { const img = q.anaImg && (UI.anaMode || "img") === "img"; return `<div class="row" style="margin-bottom:8px;flex-wrap:wrap"><b class="grow">解析</b>${q.anaImg ? `<div class="seg" role="tablist" aria-label="解析显示方式"><button role="tab" aria-selected="${img}" data-act="anaMode" data-v="img">原图</button><button role="tab" aria-selected="${!img}" data-act="anaMode" data-v="txt">文字</button></div>` : ""}${img ? `<button class="btn sm" data-act="anaImgNote">${s.noteAnaImg ? "从笔记移除原图" : "原图 → 笔记"}</button>` : q.analysis ? `<button class="btn sm" data-act="copySel" title="先在解析里选中文字">选中文字 → 笔记</button><button class="btn sm ghost" data-act="copyAll">全部 → 笔记</button>` : ""}</div>
-        ${img ? `<img class="qimg anaimg" data-ref="${esc(q.anaImg)}" alt="第${q.n}题解析原图"><p class="small faint" style="margin:6px 0 0">原图从答案 PDF 截取，公式完整；要复制文字请切到“文字”。</p>` : ""}`; })()}
-        ${q.anaImg && (UI.anaMode || "img") === "img" ? "" : q.analysis ? `<div class="ana" id="anaBox">${esc(q.analysis)}</div>` : `<p class="small muted">这道题还没有解析。可以把解析贴在这里：</p><textarea id="anaEdit" rows="4" placeholder="粘贴解析…"></textarea><button class="btn sm" style="margin-top:6px" data-act="saveAna">保存解析</button>`}
+        <div class="row" style="margin-bottom:8px;flex-wrap:wrap"><b class="grow">答案与解析</b>
+          <div class="seg" role="tablist" aria-label="解析显示方式"><button role="tab" aria-selected="${(UI.anaMode || "txt") === "txt"}" data-act="anaMode" data-v="txt">文字版</button><button role="tab" aria-selected="${UI.anaMode === "img"}" data-act="anaMode" data-v="img">图片版</button></div>
+        </div>
+        ${UI.anaMode === "img" ? `${q.anaImg ? `<img class="qimg anaimg" data-ref="${esc(q.anaImg)}" alt="第${q.n}题解析原图"><button class="btn sm" style="margin-top:8px" data-act="anaImgNote">${s.noteAnaImg ? "从笔记移除原图" : "原图 → 笔记"}</button>` : `<p class="small muted">这道题尚无解析原图。可上传截图，或在试卷首页重新更新答案解析 PDF，自动截取各题原图。</p>`}<label class="btn sm" style="margin-top:8px">${q.anaImg ? "替换解析图片" : "添加解析图片"}<input id="analysisImageIn" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden></label>` : `${q.analysis ? `<div class="row" style="margin-bottom:8px"><button class="btn sm" data-act="copySel">选中文字 → 笔记</button><button class="btn sm ghost" data-act="copyAll">全部 → 笔记</button></div><div class="ana" id="anaBox">${esc(q.analysis)}</div>` : `<p class="small muted">这道题还没有文字解析，可以粘贴后保存。</p><textarea id="anaEdit" rows="4" placeholder="粘贴解析…"></textarea><button class="btn sm" data-act="saveAna">保存解析</button>`}`}
+
       </div>
       <div class="card pad">
         <div class="row" style="margin-bottom:8px"><b class="grow">我的笔记</b><span class="small faint" id="noteState">${s.noteAt ? "已保存" : ""}</span></div>
-        <textarea id="noteBox" rows="7" placeholder="错因、思路、要记住的表述…">${esc(s.note || "")}</textarea>
+        <textarea id="noteBox" rows="7" placeholder="错因、思路、要记住的表述…也可在此粘贴截图">${esc(s.note || "")}</textarea>
+        <div class="row" style="margin-top:8px"><label class="btn sm">添加图片 / 截图<input id="noteImageIn" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden></label><span class="small faint">支持上传多张图片，或在笔记框按 Ctrl＋V 粘贴截图</span></div>
+        <div id="noteImages">${(s.noteImages || []).map((ref,i) => `<figure style="margin:12px 0"><img class="qimg" data-ref="${esc(ref)}" alt="笔记图片 ${i+1}"><button class="btn sm" data-act="noteImageRemove" data-ref="${esc(ref)}" style="margin-top:6px">移除图片 ${i+1}</button></figure>`).join("")}</div>
         ${s.noteAnaImg && q.anaImg ? `<div class="small faint" style="margin:8px 0 4px">已附上解析原图：</div><img class="qimg" data-ref="${esc(q.anaImg)}" alt="解析原图">` : ""}
       </div>
       <div class="card pad">
@@ -1946,11 +1951,46 @@ function vReview() {
 }
 afterRender.review = () => {
   const it = UI.reviewList[UI.reviewIdx]; if (!it) return; const qid = it.qid;
-  const nb = $("#noteBox"); let t;
-  if (nb) nb.oninput = () => { $("#noteState").textContent = "编辑中…"; clearTimeout(t); t = setTimeout(async () => { await setQS(qid, { note: nb.value, noteAt: Date.now() }); const el = $("#noteState"); if (el) el.textContent = "已保存"; }, 700); };
+  const nb = $("#noteBox");
+  if (nb) {
+    nb.oninput = async () => {
+      try { await setQS(qid,{note:nb.value,noteAt:Date.now()}); if(nb.isConnected) $("#noteState").textContent="已保存"; }
+      catch(e) { toast("笔记保存失败："+e.message); }
+    };
+    nb.onpaste = e => {
+      const images=[...(e.clipboardData?.items || [])].filter(x=>x.kind === "file" && x.type.startsWith("image/")).map(x=>x.getAsFile()).filter(Boolean);
+      if(images.length){e.preventDefault();addReviewImages(qid,images,"note").catch(e=>toast(e.message));}
+    };
+  }
+  const input=$("#noteImageIn");if(input)input.onchange=()=>addReviewImages(qid,[...input.files],"note").catch(e=>toast(e.message));
+  const analysisInput=$("#analysisImageIn");if(analysisInput)analysisInput.onchange=()=>addReviewImages(qid,[...analysisInput.files],"analysis").catch(e=>toast(e.message));
   const ti = $("#tagIn"); if (ti) ti.onkeydown = async e => { if (e.key === "Enter" && ti.value.trim()) { const kp = [...new Set([...(qs(qid).kp || []), ti.value.trim()])]; await setQS(qid, { kp, kpBy: "user" }); render(); setTimeout(() => $("#tagIn")?.focus(), 0); } };
   const cs = $('[data-act="copySel"]'); if (cs) cs.addEventListener("pointerdown", e => e.preventDefault());
 };
+const reviewImageJobs = new Map();
+async function addReviewImages(qid, files, kind) {
+  if (!files.length) return;
+  if(reviewImageJobs.has(qid)) throw new Error("图片正在保存，请稍候再添加");
+  reviewImageJobs.set(qid,true);
+  try {
+    for(const file of files) {
+      if(!["image/png","image/jpeg","image/webp","image/gif"].includes(file.type)) throw new Error("请选择 PNG、JPEG、WebP 或 GIF 图片");
+      if(file.size>20*1024*1024) throw new Error("单张图片不能超过20MB，请先压缩");
+      const bitmap=await createImageBitmap(file); bitmap.close();
+    }
+    for(const file of files) {
+      const ref=await putImage(file);
+      try {
+        if(kind === "analysis") {
+          const q=D.questions.get(qid);await dbPut("questions",qid,{...q,anaImg:ref});q.anaImg=ref;
+        } else await setQS(qid,{noteImages:[...(qs(qid).noteImages || []),ref],noteAt:Date.now()});
+      } catch(e) { await delImage(ref);throw e; }
+    }
+    if(UI.view === "review" && UI.reviewList[UI.reviewIdx]?.qid === qid)render();
+    toast(kind === "analysis" ? "解析图片已保存" : "笔记图片已保存，上传全部可同步到 GitHub");
+  } finally {reviewImageJobs.delete(qid);}
+}
+function hasNote(s) { return !!((s.note || "").trim() || s.noteAnaImg || s.noteImages?.length); }
 function appendNote(text) {
   const nb = $("#noteBox"); if (!nb || !text.trim()) return toast("先在解析里选中要复制的文字");
   nb.value = (nb.value ? nb.value.replace(/\s*$/, "") + "\n" : "") + text.trim(); nb.dispatchEvent(new Event("input")); toast("已加入笔记");
@@ -2026,7 +2066,7 @@ function listPanel(groups, sel, openSet, kind) {
   return `<section class="card pad">${groups.map(([m, list]) => {
     const allOn = list.every(x => sel.has(x.q.id)); const open = openSet.has(m);
     return `<div class="grp"><div class="grp-h"><button class="caret" data-act="grpToggle" data-m="${esc(m)}" data-k="${kind}" aria-expanded="${open}" aria-label="展开${esc(m)}">▼</button><span class="nm">${esc(m)}</span><span class="small muted">${list.length} 道</span><input type="checkbox" data-act="grpSel" data-m="${esc(m)}" data-k="${kind}" ${allOn ? "checked" : ""} aria-label="选择${esc(m)}全部"></div>
-      ${open ? list.map(({ q, s }) => `<div class="qrow"><span class="num small faint">${q.n}</span><span class="txt" data-act="openQ" data-id="${q.id}" data-k="${kind}" title="${esc(qLabel(q))}">${esc(kind === "notes" ? (s.note || "").split("\n")[0] : qSnippet(q))}<br><span class="small faint">${esc(qLabel(q))}${s.wrongCount ? ` · 错 ${s.wrongCount} 次` : ""}${(s.kp || []).length ? " · " + esc(s.kp.map(kpShort).join("、")) : ""}</span></span><input type="checkbox" data-act="qSel" data-id="${q.id}" data-k="${kind}" ${sel.has(q.id) ? "checked" : ""} aria-label="选择这道题"></div>`).join("") : ""}</div>`;
+      ${open ? list.map(({ q, s }) => `<div class="qrow"><span class="num small faint">${q.n}</span><span class="txt" data-act="openQ" data-id="${q.id}" data-k="${kind}" title="${esc(qLabel(q))}">${esc(kind === "notes" ? ((s.note || "").split("\n")[0] || `图片笔记（${(s.noteImages || []).length + Number(!!s.noteAnaImg)}张）`) : qSnippet(q))}<br><span class="small faint">${esc(qLabel(q))}${s.wrongCount ? ` · 错 ${s.wrongCount} 次` : ""}${(s.kp || []).length ? " · " + esc(s.kp.map(kpShort).join("、")) : ""}</span></span><input type="checkbox" data-act="qSel" data-id="${q.id}" data-k="${kind}" ${sel.has(q.id) ? "checked" : ""} aria-label="选择这道题"></div>`).join("") : ""}</div>`;
   }).join("")}</section>`;
 }
 function filterBar() {
@@ -2045,7 +2085,7 @@ function vBook() {
     ${S.sample ? `<button class="btn" data-act="bookAi" ${n ? "" : "disabled"} title="为选中且还没有知识点的题自动归类">AI 归类</button>` : ""}<button class="btn" data-act="bookReview" ${n ? "" : "disabled"}>看解析</button><button class="btn" data-act="bookExport" ${n ? "" : "disabled"}>导出 PDF</button><button class="btn primary" data-act="bookRedo" ${n ? "" : "disabled"}>重新做</button></div></div>`;
 }
 function vNotes() {
-  const groups = bookItems(s => (s.note || "").trim() || s.noteAnaImg); const all = groups.flatMap(g => g[1]);
+  const groups = bookItems(s => hasNote(s)); const all = groups.flatMap(g => g[1]);
   const n = [...UI.noteSel].filter(id => all.some(x => x.q.id === id)).length;
   return `
   <section class="card pad"><div class="kpi"><div><b>${all.length}</b><span>道题有笔记</span></div><div><b>${groups.length}</b><span>个模块</span></div></div></section>
@@ -2569,6 +2609,7 @@ async function exportNotesPdf(items, opt = {}) {
     if (mine) B.text(`我的答案 ${mine}　正确答案 ${q.answer || "?"}`, { size: 22, color: answersEqual(mine, q.answer) ? "#1f8456" : "#c43d2b", gap: 6 });
     B.text("✎ 笔记", { size: 22, bold: true, color: "#8a6a00", gap: 2 }); B.text(s.note || "", { size: 24, color: "#3b2f00", gap: 8 });
     if (s.noteAnaImg && q.anaImg) await B.image(q.anaImg);
+    for (const ref of s.noteImages || []) await B.image(ref);
     if (opt.ana && q.anaImg && !s.noteAnaImg) { B.text("解析", { size: 22, bold: true, color: "#555", gap: 2 }); await B.image(q.anaImg); }
     else if (opt.ana && q.analysis && !q.anaImg) { B.text("解析", { size: 22, bold: true, color: "#555", gap: 2 }); B.text(q.analysis, { size: 21, color: "#444", gap: 8 }); }
     if ((s.kp || []).length) B.text("知识点：" + s.kp.map(kpShort).join("、"), { size: 20, color: "#777", gap: 6 });
@@ -2581,6 +2622,11 @@ async function exportNotesMd(items) {
   for (const { q, s } of items) {
     if (q.module !== lastMod) { md += `\n## ${q.module || "未分类"}\n`; lastMod = q.module; }
     md += `\n### ${qLabel(q)}（答案 ${q.answer || "?"}）\n\n${(q.text || "").trim()}\n\n**笔记**\n\n${(s.note || "").trim()}\n`;
+    for (const [i,ref] of [...(s.noteImages || []),...(s.noteAnaImg && q.anaImg ? [q.anaImg] : [])].entries()) {
+      const blob=await loadBlob(ref);if(!blob)throw new Error("笔记图片丢失，导出未完成");
+      const data=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(blob);});
+      md += `\n![笔记图片 ${i+1}](${data})\n`;
+    }
     if ((s.kp || []).length) md += `\n知识点：${s.kp.map(kpShort).join("、")}\n`;
   }
   await saveFile("错题笔记.md", md);
@@ -2588,6 +2634,7 @@ async function exportNotesMd(items) {
 
 /* ---------- backup (local mode) ---------- */
 async function backup() {
+  if(!S.cloud) { const data=await GitHubSync.snapshot();await saveFile(`错题本完整备份-${Date.now()}.json`,JSON.stringify(data));return; }
   toast("正在打包备份…", 30000);
   const out = { v: 1, papers: D.papers, questions: [...D.questions.values()], attempts: D.attempts, qstate: [...D.qstate.values()], images: {} };
   for (const q of out.questions) for (const ref of [q.img, q.mat]) if (ref && !out.images[ref]) { const b = await loadBlob(ref); if (b) out.images[ref] = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); }); }
@@ -2638,7 +2685,7 @@ document.addEventListener("click", async e => {
           const pdf = await openPdf(file); const { txt, pages: apages, map } = await pdfFullText(pdf, m => toast(m, 60000)); const r = parseAnswers(txt);
           let nAna = 0, nAns = 0, nImg = 0, imgs = {};
           try {
-            const reg = anaRegions(apages, map, r.spans); const want = paperQids(pid).map(x => D.questions.get(x)).filter(q => ANA_IMG_MOD(q.module) && reg[q.n]).map(q => q.n);
+            const reg = anaRegions(apages, map, r.spans); const want = paperQids(pid).map(x => D.questions.get(x)).filter(q => reg[q.n]).map(q => q.n);
             if (want.length) { const blobs = await cropAnalyses(pdf, reg, want, (k, t) => toast(`正在截取解析原图 ${k}/${t} 页…`, 60000)); for (const n of Object.keys(blobs)) { toast(`正在保存解析原图…`, 60000); imgs[n] = await putImage(blobs[n]); } }
           } catch (e) { console.warn("解析截图失败", e); }
           for (const qid of paperQids(pid)) {
@@ -2743,7 +2790,13 @@ document.addEventListener("click", async e => {
     case "rvFlag": { const qid = UI.reviewList[UI.reviewIdx].qid; await setQS(qid, { flag: !qs(qid).flag }); render(); break; }
     case "copySel": { const sel = window.getSelection(); const box = $("#anaBox"); const t = sel && box && box.contains(sel.anchorNode) ? sel.toString() : ""; appendNote(t); break; }
     case "copyAll": appendNote($("#anaBox")?.textContent || ""); break;
-    case "anaMode": UI.anaMode = el.dataset.v; render(); break;
+    case "anaMode": UI.anaMode = el.dataset.v; try {localStorage.setItem("cuotiben.analysisMode",UI.anaMode);} catch {} render(); break;
+    case "noteImageRemove": {
+      const qid=UI.reviewList[UI.reviewIdx].qid, ref=el.dataset.ref;
+      await setQS(qid,{noteImages:(qs(qid).noteImages || []).filter(x=>x!==ref),noteAt:Date.now()});
+      const used=[...D.qstate.values()].some(s=>s.noteImages?.includes(ref)) || [...D.questions.values()].some(q=>[q.img,q.mat,q.anaImg].includes(ref));
+      if(!used)await delImage(ref);render();break;
+    }
     case "anaImgNote": { const qid = UI.reviewList[UI.reviewIdx].qid; const on = !qs(qid).noteAnaImg; await setQS(qid, { noteAnaImg: on, noteAt: Date.now() }); toast(on ? "已把解析原图加入笔记" : "已从笔记移除原图"); render(); break; }
     case "saveAna": { const qid = UI.reviewList[UI.reviewIdx].qid; const q = D.questions.get(qid); q.analysis = $("#anaEdit").value.trim(); await dbPut("questions", qid, q); render(); break; }
     case "kpOpen": kpOpen(UI.reviewList[UI.reviewIdx].qid); break;
@@ -2768,19 +2821,19 @@ document.addEventListener("click", async e => {
     // book & notes
     case "grpToggle": { const m = el.dataset.m; UI.bookOpen.has(m) ? UI.bookOpen.delete(m) : UI.bookOpen.add(m); render(); break; }
     case "grpSel": case "qSel": case "selAll": {
-      const kind = el.dataset.k, sel = kind === "book" ? UI.bookSel : UI.noteSel; const fil = kind === "book" ? (s => s.inBook) : (s => (s.note || "").trim() || s.noteAnaImg);
+      const kind = el.dataset.k, sel = kind === "book" ? UI.bookSel : UI.noteSel; const fil = kind === "book" ? (s => s.inBook) : (s => hasNote(s));
       const groups = bookItems(fil);
       const ids = act === "qSel" ? [id] : act === "grpSel" ? (groups.find(g => g[0] === el.dataset.m)?.[1] || []).map(x => x.q.id) : groups.flatMap(g => g[1]).map(x => x.q.id);
       ids.forEach(x => el.checked ? sel.add(x) : sel.delete(x)); const sy = window.scrollY; render(); window.scrollTo(0, sy); break;
     }
-    case "openQ": { const kind = el.dataset.k; const fil = kind === "book" ? (s => s.inBook) : (s => (s.note || "").trim() || s.noteAnaImg); const all = bookItems(fil).flatMap(g => g[1]); openReview(all.map(x => ({ qid: x.q.id })), all.findIndex(x => x.q.id === id), kind); break; }
+    case "openQ": { const kind = el.dataset.k; const fil = kind === "book" ? (s => s.inBook) : (s => hasNote(s)); const all = bookItems(fil).flatMap(g => g[1]); openReview(all.map(x => ({ qid: x.q.id })), all.findIndex(x => x.q.id === id), kind); break; }
     case "bookReview": { const items = selectedInOrder(UI.bookSel, s => s.inBook); openReview(items.map(x => ({ qid: x.q.id })), 0, "book"); break; }
     case "bookRedo": { const items = selectedInOrder(UI.bookSel, s => s.inBook); const mods = [...new Set(items.map(x => x.q.module || "未分类"))]; startAttempt({ qids: items.map(x => x.q.id), title: `错题重做 · ${mods.join("、")}`, mode: "redo" }); break; }
     case "bookExport": exportDialog(); break;
     case "doExport": { const opt = { ana: $("#exAna").checked, note: $("#exNote").checked, gap: $("#exGap").checked }; closeSheet(); await exportRedo(selectedInOrder(UI.bookSel, s => s.inBook), opt); break; }
     case "notesPdf": showSheet(`<h3 style="font-family:var(--f-display)">导出笔记 PDF</h3><p class="small muted">每道题：题目（含材料）、正确答案、你的答案、我的笔记、知识点。</p><label class="row small" style="margin:10px 0"><input type="checkbox" id="nxAna"> 同时附上解析</label><div class="row" style="margin-top:14px"><button class="btn grow" data-act="closeSheet">取消</button><button class="btn primary grow" data-act="doNotesPdf">生成 PDF</button></div>`); break;
-    case "doNotesPdf": { const ana = $("#nxAna").checked; closeSheet(); await exportNotesPdf(selectedInOrder(UI.noteSel, s => (s.note || "").trim() || s.noteAnaImg), { ana }); break; }
-    case "notesMd": await exportNotesMd(selectedInOrder(UI.noteSel, s => (s.note || "").trim() || s.noteAnaImg)); break;
+    case "doNotesPdf": { const ana = $("#nxAna").checked; closeSheet(); await exportNotesPdf(selectedInOrder(UI.noteSel, s => hasNote(s)), { ana }); break; }
+    case "notesMd": await exportNotesMd(selectedInOrder(UI.noteSel, s => hasNote(s))); break;
   }
 });
 document.addEventListener("change", async e => {
