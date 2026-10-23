@@ -597,7 +597,7 @@ td.h-good{background:var(--good-soft)} td.h-mid{background:var(--mark-soft)} td.
 <script src="vendor/pdf.min.js"></script>
 <script src="vendor/pdf.worker.min.js"></script>
 <script src="vendor/jspdf.umd.min.js"></script>
-<script src="github-sync.js"></script>
+<script src="github-sync.js?v=20261023-repair-verification2"></script>
 <script>
 "use strict";
 /* =====================================================================
@@ -1801,12 +1801,20 @@ async function applyDataCorrections(patch) {
   await loadData(); D.meta = Object.fromEntries((await dbAll("meta")).map(x=>[x.id,x]));
   await regradeCompletedAttempts(); return true;
 }
+async function imageRepairIsCurrent(patch) {
+  if(!Array.isArray(patch.questions) || !patch.questions.length || !S.idb)return false;
+  const keys=new Set(await idbReq("blobs","readonly",s=>s.getAllKeys()));
+  return patch.questions.every(edit=>{
+    const q=D.questions.get(edit.id);
+    return q && q.pid===patch.paperId && q.n===edit.n && q.img===edit.img && q.mat===edit.mat && q.matKey===edit.matKey && q.text===edit.text && keys.has(edit.img.slice(2)) && (!edit.mat || keys.has(edit.mat.slice(2)));
+  });
+}
 // Apply reviewed image replacements atomically, retaining every existing user field.
 async function applyImageRepairs(patch) {
   if (!patch || patch.format !== "cuotiben-image-repairs-v1" || typeof patch.revision !== "string" || !Array.isArray(patch.questions) || !patch.images) throw new Error("题目图片修订格式无效");
   if (!paperOf(patch.paperId)) return false;
   const key="image-repair:"+patch.revision;
-  if (D.meta[key]) return false;
+  if (D.meta[key] && await imageRepairIsCurrent(patch)) return false;
   if (document.querySelector(".prac") || WQ.running || WQ.list.length) throw new Error("请先退出做题并等待本机保存完成，再应用图片修订");
   if (!S.idb || S.db) throw new Error("请在独立网页中应用图片修订");
   const ids=new Set(), refs=new Set(), rows=[];
@@ -1960,6 +1968,7 @@ function vReview() {
       <div class="qmeta"><span class="chip acc">${esc(q.module || "未分类")}</span><span class="small faint">${esc(qLabel(q))}</span>${s.wrongCount ? `<span class="chip bad">错 ${s.wrongCount} 次</span>` : ""}${s.inBook ? `<span class="chip">在错题本</span>` : ""}</div>
       ${q.mat ? `<details ${q.module === "资料分析" || q.module === "言语理解与表达" ? "open" : ""}><summary>材料</summary><img class="qimg" style="margin:8px 0" data-ref="${esc(q.mat)}" alt="材料"></details>` : ""}
       ${q.img ? `<img class="qimg" data-ref="${esc(q.img)}" alt="第${q.n}题">` : ""}
+      <div class="row small" style="margin:8px 0"><span class="faint grow">${q.img?.startsWith("i:repair-") ? "题图来自完整 PDF 修补包" : "若题干或选项缺失，可检查云端完整题图"}</span><button class="btn sm" data-act="repairQuestionImage">修复题图</button></div>
       <div class="ansline">
         <span>你的答案 <b style="color:${res === "答对" ? "var(--good)" : res === "答错" ? "var(--bad)" : "var(--ink2)"}">${esc(mine || "—")}</b></span>
         <span>正确答案 <b>${esc(q.answer || "—")}</b></span>
@@ -2836,6 +2845,7 @@ document.addEventListener("click", async e => {
     case "rvFlag": { const qid = UI.reviewList[UI.reviewIdx].qid; await setQS(qid, { flag: !qs(qid).flag }); render(); break; }
     case "copySel": { const sel = window.getSelection(); const box = $("#anaBox"); const t = sel && box && box.contains(sel.anchorNode) ? sel.toString() : ""; appendNote(t); break; }
     case "copyAll": appendNote($("#anaBox")?.textContent || ""); break;
+    case "repairQuestionImage": GitHubSync.openRepair(); break;
     case "anaMode": UI.anaMode = el.dataset.v; try {localStorage.setItem("cuotiben.analysisMode",UI.anaMode);} catch {} render(); break;
     case "noteImageRemove": {
       const qid=UI.reviewList[UI.reviewIdx].qid, ref=el.dataset.ref;

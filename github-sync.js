@@ -19,7 +19,7 @@ const GitHubSync = (() => {
   async function api(c, path, options = {}) {
     const {allowMissing, ...requestOptions} = options;
     const response = await fetch(`https://api.github.com/repos/${c.repo}${path}`, {
-      ...requestOptions, headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28', ...(options.body ? { 'Content-Type': 'application/json' } : {}) }
+      ...requestOptions, cache:"no-store", headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28', ...(options.body ? { 'Content-Type': 'application/json' } : {}) }
     });
     if (response.status === 404 && allowMissing) return null;
     if (!response.ok) {
@@ -48,7 +48,8 @@ const GitHubSync = (() => {
     if(!file)return false;
     const manifest=JSON.parse(new TextDecoder().decode(decode(file.content)));
     if(manifest.format!=="cuotiben-image-repairs-manifest-v1" || !Array.isArray(manifest.parts) || typeof manifest.revision!=="string" || !/^[a-f0-9]{64}$/.test(manifest.digest))throw new Error("云端题目修订清单无效");
-    if(!paperOf(manifest.paperId) || D.meta["image-repair:"+manifest.revision])return false;
+    if(!paperOf(manifest.paperId))return false;
+    if(D.meta["image-repair:"+manifest.revision] && await imageRepairIsCurrent(manifest))return false;
     const chunks=[];
     for(let i=0;i<manifest.parts.length;i++){
       const sha=manifest.parts[i];if(!/^[a-f0-9]{40}$/.test(sha))throw new Error("图片修订分块无效");
@@ -62,8 +63,16 @@ const GitHubSync = (() => {
     if(patch.revision!==manifest.revision || patch.paperId!==manifest.paperId)throw new Error("修订版本不匹配");
     return applyImageRepairs(patch);
   }
+  function openRepair() {
+    const c=read();
+    showSheet(`<h3>修复缺失的题干和选项</h3><p class="small muted">从你的私有仓库核对完整题图。只替换对应试卷的图片与材料，保留你的答案、笔记和用时。</p><label>数据仓库<input id="githubRepo" value="${esc(c.repo || 'kaledink/dataofxingce')}"></label><label>专用令牌<input id="githubToken" type="password" autocomplete="off" placeholder="只在本次页面中使用"></label><p class="small" id="githubStatus" role="status">输入原来的专用令牌后，点击下方按钮。</p><div class="row"><button class="btn" data-act="closeSheet">关闭</button><button class="btn primary" data-github="corrections">检查并应用完整题图</button></div>`);
+  }
   async function corrections() {
-    const c=form(); await connect(c); render(); status('云端修订检查完成；适用的题目图片、模块与用时已应用，作答和笔记保留');
+    const currentId=UI.view==='review' ? UI.reviewList[UI.reviewIdx]?.qid : null;
+    const c=form();await connect(c);
+    const current=currentId && D.questions.get(currentId);
+    if(currentId && !current?.img?.startsWith('i:repair-'))throw new Error('当前试卷未匹配到完整题图修补包，请先确认已上传的是正在查看的这套试卷');
+    render();status(current ? `第${current.n}题完整题图已应用，请关闭此窗口查看；作答和笔记保留` : '云端修订检查完成；适用的题目图片、模块与用时已应用，作答和笔记保留');
   }
   async function remote(c, head) {
     const commit = await api(c, `/git/commits/${head}`);
@@ -165,6 +174,6 @@ const GitHubSync = (() => {
     } catch(e) { status('操作未完成：' + e.message); }
     finally { busy = false; document.querySelectorAll('[data-github]').forEach(x => x.disabled = false); }
   });
-  return {card,snapshot,restore};
+  return {card,snapshot,restore,openRepair};
 })();
 function githubSyncCard() { return GitHubSync.card(); }

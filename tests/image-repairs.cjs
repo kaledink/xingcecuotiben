@@ -11,7 +11,7 @@ await loadData();return data;
 });
 const digest=crypto.createHash('sha256').update(Buffer.from(image,'base64')).digest('hex'),ref='i:repair-'+digest;
 const patch={format:'cuotiben-image-repairs-v1',revision:'test-v1',paperId:'p',questions:[6,12].map(n=>({id:'q'+n,n,img:ref,mat:ref,matKey:'shared',text:n+'.题干及A.B.C.D.完整选项'})),images:{[ref]:{type:'image/png',data:image}}};
-const bytes=Buffer.from(JSON.stringify(patch));const manifest={format:'cuotiben-image-repairs-manifest-v1',revision:patch.revision,paperId:'p',parts:['a'.repeat(40)],bytes:bytes.length,digest:crypto.createHash('sha256').update(bytes).digest('hex')};let corrupted=true;
+const bytes=Buffer.from(JSON.stringify(patch));const manifest={format:'cuotiben-image-repairs-manifest-v1',revision:patch.revision,paperId:'p',questions:patch.questions,parts:['a'.repeat(40)],bytes:bytes.length,digest:crypto.createHash('sha256').update(bytes).digest('hex')};let corrupted=true;
 await p.route('https://api.github.com/**',async route=>{
 const request=route.request();assert.equal(request.method(),'GET');const path=new URL(request.url()).pathname;
 if(path.endsWith('/cuotiben-corrections.json'))return route.fulfill({status:404,json:{}});
@@ -27,5 +27,12 @@ for(const key of ['attempts','qstate','memos'])assert.deepEqual(result[key],befo
 assert.equal(await p.evaluate(patch=>applyImageRepairs(patch),patch),false);
 await p.reload();await p.locator('#githubRepo').waitFor();assert.equal(await p.evaluate(()=>D.questions.get('q12').img),ref);
 await p.evaluate(()=>openReview([{qid:'q6'}]));await p.locator('img[alt="第6题"]').waitFor();assert.deepEqual(errors,[]);
+// A stale applied marker must not suppress repair of an overwritten image.
+await p.evaluate(async()=>{const q=D.questions.get('q6');q.img='i:old';await dbPut('questions',q.id,q);render();});
+await p.locator('[data-act=repairQuestionImage]').click();await p.locator('#githubRepo').fill('test/private');await p.locator('#githubToken').fill('test-key');await p.locator('[data-github=corrections]').click();await p.locator('#githubStatus').filter({hasText:'第6题完整题图已应用'}).waitFor();assert.equal(await p.evaluate(()=>D.questions.get('q6').img),ref);
+await p.locator('[data-act=closeSheet]').click();
+// Missing local blob bytes must be restored even if question refs and revision match.
+await p.evaluate(async ref=>{await idbReq('blobs','readwrite',s=>s.delete(ref.slice(2)));},ref);
+assert.equal(await p.evaluate(patch=>applyImageRepairs(patch),patch),true);
 console.log('PASS: authenticated private repair download, rejects corrupt payload, atomically replaces only question fields, preserves answers/times/notes/memos, reload and idempotency');
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exit(1)});
