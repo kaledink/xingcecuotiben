@@ -4,6 +4,7 @@ const {chromium}=require('playwright-core'); const assert=require('node:assert/s
  const sha=()=> (++seq).toString(16).padStart(40,'0'); const requests=[];
  await p.route('https://api.github.com/**',async route=>{const r=route.request(),path=new URL(r.url()).pathname.replace('/repos/test/private',''); const body=r.postDataJSON();requests.push({path,body});let result;
  if(path==='')result={private:!pub,default_branch:'main'};
+ else if(path.startsWith('/contents/cuotiben-corrections.json'))return route.fulfill({status:404,json:{}});
  else if(path==='/git/ref/heads/main')result={object:{sha:head}};
  else if(path.startsWith('/git/commits/')&&r.method()==='GET')result={tree:{sha:'tree'}};
  else if(path==='/git/trees/tree')result={tree:manifest?[{path:'cuotiben-data.json',sha:manifest}]:[]};
@@ -14,7 +15,7 @@ const {chromium}=require('playwright-core'); const assert=require('node:assert/s
  else if(path==='/git/refs/heads/main'){if(conflict)return route.fulfill({status:422,json:{}});assert.equal(body.force,false);head='newcommit';result={};}
  else throw Error('Unexpected '+path);
  await route.fulfill({json:result});});
- await p.goto('http://127.0.0.1:8000/');await p.locator('#githubRepo').waitFor();
+ await p.goto(process.env.BASE_URL || 'http://127.0.0.1:8000/');await p.locator('#githubRepo').waitFor();
  await p.evaluate(async()=>{await dbPut('meta','test',{value:'私人笔记'});await dbPut('memos','memo',{text:'随手记',createdAt:1});await dbPut('todos','todo',{text:'待办',createdAt:1});await putImage(new Blob(['image-test'],{type:'image/png'}));});
  await p.locator('#githubRepo').fill('test/private');await p.locator('#githubToken').fill('test-token');
  pub=true;await p.locator('[data-github=upload]').click();await p.getByText('操作未完成：为保护记录和图片，只允许连接私有仓库',{exact:true}).waitFor();assert.equal(blobs.size,0);pub=false;

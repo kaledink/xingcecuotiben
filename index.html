@@ -124,9 +124,9 @@ textarea{width:100%;resize:vertical;line-height:1.6}
 .timer{font-family:var(--f-num);font-size:14px;color:var(--ink2);display:flex;align-items:center;gap:4px;min-width:76px}
 .prac-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr)}
 .prac-body.has-mat{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-@media (max-width:900px){.prac-body.has-mat{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}}
+@media (max-width:900px){.prac-body.has-mat{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.has-mat .qsheet{padding:8px}.has-mat .opt{width:40px;height:40px}.has-mat .opts{gap:6px}}
 .matpane{overflow:auto;border-right:1px solid var(--line);background:var(--sunk);padding:14px;position:relative}
-@media (max-width:900px){.matpane{border-right:0;border-bottom:1px solid var(--line);max-height:38vh}}
+@media (max-width:900px){.matpane{padding:8px}}
 .matpane .lbl{font-size:12px;color:var(--ink3);margin-bottom:6px;display:flex;justify-content:space-between}
 .qpane{overflow:auto;position:relative;-webkit-overflow-scrolling:touch}
 .qsheet{max-width:860px;margin:0 auto;padding:16px;position:relative}
@@ -256,7 +256,7 @@ td.h-good{background:var(--good-soft)} td.h-mid{background:var(--mark-soft)} td.
 .sub-t{font-size:13px;color:var(--ink2);margin:14px 0 4px;font-weight:600}
 .kpby{font-size:12px;color:var(--ink3)}
 @media (min-width:700px){body.memo-open .prac{right:min(340px,42vw)} body.memo-open .memo{width:min(340px,42vw)} body.memo-open main.wrap{padding-right:calc(min(340px,42vw) + 16px)} body.memo-open .bar-bottom{right:min(340px,42vw)}}
-@media (min-width:700px) and (max-width:1399px){body.memo-open .prac-body.has-mat{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)} body.memo-open .matpane{border-right:0;border-bottom:1px solid var(--line);max-height:38vh}}
+@media (min-width:700px) and (max-width:1399px){body.memo-open .prac-body.has-mat{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 @media (max-width:699px){.memo{top:auto;left:0;width:100%;height:44vh;border-left:0;border-top:1px solid var(--line);border-radius:14px 14px 0 0;box-shadow:0 -6px 20px rgba(0,0,0,.1)} body.memo-open .prac{bottom:44vh} body.memo-open main.wrap{padding-bottom:calc(44vh + 120px)} body.memo-open .bar-bottom{bottom:44vh}}
 .sug-box{margin-top:14px;border:1px dashed var(--accent);border-radius:10px;padding:12px;background:var(--accent-soft)}
 .sug-row{display:flex;gap:8px;align-items:flex-start;padding:10px 0;border-top:1px dashed var(--line)}
@@ -610,6 +610,7 @@ const uid = (p = "") => p + Date.now().toString(36) + Math.random().toString(36)
 const pad3 = n => String(n).padStart(3, "0");
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const fmtT = s => { s = Math.round(s || 0); const m = Math.floor(s / 60), x = s % 60; return m >= 60 ? `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}:${String(x).padStart(2, "0")}` : `${String(m).padStart(2, "0")}:${String(x).padStart(2, "0")}`; };
+const fmtStopwatch = seconds => { const cs=Math.round((seconds || 0)*100), whole=Math.floor(cs/100), h=Math.floor(whole/3600), m=Math.floor(whole/60)%60; return `${h ? h+":" : ""}${String(m).padStart(2,"0")}:${String(whole%60).padStart(2,"0")}.${String(cs%100).padStart(2,"0")}`; };
 const fmtDur = s => { s = Math.round(s || 0); if (s < 60) return s + "秒"; const m = Math.floor(s / 60); return m < 60 ? `${m}分${s % 60}秒` : `${Math.floor(m / 60)}时${m % 60}分`; };
 const fmtDate = t => { const d = new Date(t); return `${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
@@ -1072,12 +1073,12 @@ function detectStructure(pages) {
     let hb = 0, fb = 1;
     pages.forEach(p => p.lines.forEach(l => {
       const k = l.c.replace(/\d+/g, "#"); const rep = count.get(k) >= Math.max(2, n * 0.4) || /^[-—·•第\s#]*#[页共,，\s#\-—]*$/.test(k) && k.length < 14;
-      if (!rep) return;
+      if (!rep || /^\d{1,3}[.．、]|^[A-D][.．、]/.test(l.c)) return;
       const yt = l.top / p.h, yb = l.y / p.h;
       if (yb < 0.14) hb = Math.max(hb, yb + 0.006);
       if (yt > 0.86) fb = Math.min(fb, yt - 0.006);
     }));
-    head = Math.max(0.02, hb || 0.03); foot = Math.min(0.985, fb < 1 ? fb : 0.97);
+    head = hb || 0; foot = Math.min(0.985, fb < 1 ? fb : 0.97);
   }
   const markers = [], modules = [];
   let last = null, stop = false;
@@ -1086,8 +1087,16 @@ function detectStructure(pages) {
     const xs = p.lines.map(l => l.x0).sort((a, b) => a - b); const left = xs.length ? xs[Math.floor(xs.length * 0.1)] : 0;
     for (const l of p.lines) {
       if (stop) break;
-      const yf = l.top / p.h; if (yf < head || l.y / p.h > foot) continue;
+      const c0 = l.c, topQuestion = c0.match(/^(\d{1,3})[.．、](?!\d)/);
+      const expectedTop = topQuestion && (last === null ? +topQuestion[1] >= 1 && +topQuestion[1] <= 200 : +topQuestion[1] > last && +topQuestion[1] <= last + 4);
+      const yf = l.top / p.h; if ((yf < head && !expectedTop) || l.y / p.h > foot) continue;
       const c = l.c;
+      // Materials may start with an explicit range or a standalone passage number.
+      const range = c.match(/(?:回答|完成|作答)(?:下列|以下)?第?(\d{1,3})[-—–~～至到]{1,2}(\d{1,3})(?:小)?题/);
+      const centered = l.x0 > p.w * 0.3 && c.length <= 6 && /[一二三四五六七八九十]/.test(c) && !/[\u4e00-\u9fff]{2}/.test(c.replace(/[一二三四五六七八九十]/g, "x"));
+      if (/^(?:[（(][一二三四五六七八九十]{1,3}[)）]|[一二三四五六七八九十]{1,3}[、.．])$/.test(c) || centered || range || /^(?:材料|资料)[一二三四五六七八九十0-9]+[：:]/.test(c) || /^(?:请)?(?:根据|阅读).{0,40}(?:材料|资料|短文|文章).{0,20}(?:回答|完成)/.test(c)) {
+        markers.push({ page: pi, y: l.top, type: "mat", range: range ? [+range[1], +range[2]] : null, auto: 1 }); continue;
+      }
       // section heading
       const part = c.match(/^第[一二三四五六七八九十]部分[:：、.\s]?(.{0,14})/);
       const sec = c.match(/^([一二三四五六七八九十]{1,3})[、.,，]\s*(.{0,14})/) || (part ? ["", "", part[1]] : null);
@@ -1096,12 +1105,6 @@ function detectStructure(pages) {
         const mod = guessModule(sec[2] || sec[1] || "");
         if (mod) { modules.push({ name: mod, from: (last ?? 0) + 1, auto: 1 }); markers.push({ page: pi, y: l.top, type: "cut", auto: 1 }); }
         continue;
-      }
-      // material
-      const range = c.match(/回答(\d{1,3})[-—–~～至到]{1,2}(\d{1,3})题/);
-      const centered = l.x0 > p.w * 0.3 && c.length <= 6 && /[一二三四五六七八九十]/.test(c) && !/[\u4e00-\u9fff]{2}/.test(c.replace(/[一二三四五六七八九十]/g, "x"));
-      if (/^[（(][一二三四五六七八九十]{1,3}[)）]$/.test(c) || centered || (range && /^(根据|阅读|请根据)/.test(c))) {
-        markers.push({ page: pi, y: l.top, type: "mat", range: range ? [+range[1], +range[2]] : null, auto: 1 }); continue;
       }
       // question start
       const m = c.match(/^(\d{1,3})[.．、](?!\d)/) || c.match(/^(\d{1,3})(?:[.．、](?=\d)|(?=[\u4e00-\u9fff“"‘]))/);
@@ -1127,12 +1130,15 @@ function buildRegions(pages, st) {
   const out = [], mats = {};
   const firstNum = st.firstNum || 1;
   let qi = 0;
+  const firstMarked = mk.find(m => m.type === "q" && m.num);
+  const preserveNumbers = !firstMarked || firstMarked.num === firstNum;
+  let nextNumber = firstNum;
   const regionFrom = (i) => {
     const m = mk[i], nx = mk[i + 1];
     const slices = [];
     const endPage = nx ? nx.page : m.page;
     for (let p = m.page; p <= endPage; p++) {
-      const top = p === m.page ? Math.max(m.y - 6, st.head * H(p)) : st.head * H(p);
+      const top = p === m.page ? Math.max(0, m.y - 6) : st.head * H(p);
       const bot = nx && p === nx.page ? Math.min(nx.y - 2, st.foot * H(p)) : st.foot * H(p);
       if (bot - top > 10) slices.push({ page: p, top, bot });
     }
@@ -1143,17 +1149,19 @@ function buildRegions(pages, st) {
   mk.forEach((m, i) => {
     if (m.type === "cut") { curMat = null; return; }
     if (m.type === "mat") { const key = "m" + i; mats[key] = { slices: regionFrom(i), range: m.range, mod: null }; curMat = key; return; }
-    const n = firstNum + qi++;
+    const n = preserveNumbers ? (m.num || nextNumber) : firstNum + qi; qi++; nextNumber = n + 1;
     const mod = moduleOf(n);
     let mat = null;
     if (curMat) {
       const M = mats[curMat];
-      if (M.range) { if (n >= M.range[0] && n <= M.range[1]) mat = curMat; else if (n > M.range[1]) curMat = null; }
+      if (M.range?.every(Boolean)) { if (n >= M.range[0] && n <= M.range[1]) mat = curMat; else if (n > M.range[1]) curMat = null; }
       else { if (M.mod === null) M.mod = mod; M.used = (M.used || 0) + 1; if (M.mod === mod && M.used <= 5) mat = curMat; else curMat = null; }
     }
     out.push({ n, mod, mat, slices: regionFrom(i), marker: m });
   });
-  return { qs: out, mats };
+  const missing = [];
+  for (let i = 1; i < out.length; i++) for (let n = out[i - 1].n + 1; n < out[i].n; n++) missing.push(n);
+  return { qs: out, mats, missing };
 }
 function regionText(pages, slices) {
   const parts = [];
@@ -1434,6 +1442,7 @@ function vImport() {
       <div class="card pad">
         <div class="kpi"><div><b>${R.qs.length}</b><span>道题</span></div><div><b>${Object.keys(R.mats).length}</b><span>段材料</span></div><div><b>${withAns}</b><span>题有答案</span></div></div>
         ${R.qs.length < 5 ? `<p class="warn" style="margin-top:12px">${!st.hasText ? "这份 PDF 没能读出文字。" : "读出了文字，但没找到题号，可能是文字层乱码。"}可以用文字识别重新读一遍（每页几秒），或者在右边页面上手动点每道题的开头。</p><button class="btn primary" style="margin-top:8px;width:100%" data-act="impOcr" ${IMP.busy ? "disabled" : ""}>用文字识别重新读取</button>` : ""}
+        ${R.missing.length ? `<p class="warn">未识别到第 ${R.missing.join("、")} 题，请检查这些题是否在页顶，并补上“题目开头”。已识别的题号不会向前错位。</p>` : ""}
         ${mis ? `<p class="warn" style="margin-top:12px">卷面上的第 ${mis.marker.num} 题被排成了第 ${mis.n} 题。${mis.marker.num > mis.n ? `前面漏了 ${mis.marker.num - mis.n} 个题目开头（会和上一题粘在一起），请往前找到后用“题目开头”补点。` : `前面多出了 ${mis.n - mis.marker.num} 个题目开头，点它的标签删除。`}</p>` : ""}
       </div>
       <div class="card pad">
@@ -1443,6 +1452,8 @@ function vImport() {
           <button class="tool" data-act="tool" data-t="mat" aria-pressed="${IMP.tool === "mat"}">材料开头</button>
           <button class="tool" data-act="tool" data-t="cut" aria-pressed="${IMP.tool === "cut"}">截断（之后不要）</button>
         </div>
+        <p class="small muted">共用材料请标记“材料开头”，下方可指定关联题号；导入后材料会固定在左侧，五道题共用同一块材料画板。</p>
+        ${st.markers.map((m,i) => m.type === "mat" ? `<div class="row small" style="margin-top:8px">第 ${m.page+1} 页材料：<input type="number" min="1" placeholder="起题号" aria-label="材料起题号" data-act="matRange" data-i="${i}" data-end="0" value="${m.range?.[0] || ""}" style="width:70px">至<input type="number" min="1" placeholder="止题号" aria-label="材料止题号" data-act="matRange" data-i="${i}" data-end="1" value="${m.range?.[1] || ""}" style="width:70px">题</div>` : "").join("")}
         <div class="row small" style="margin-top:10px"><label>首题题号 <input type="number" min="1" id="firstNum" value="${st.firstNum}" style="width:70px"></label></div>
         <div class="row small" style="margin-top:6px"><label class="grow">页眉 <input type="range" min="0" max="20" step="0.5" id="headR" value="${(st.head * 100).toFixed(1)}" style="width:100%"></label><label class="grow">页脚 <input type="range" min="80" max="100" step="0.5" id="footR" value="${(st.foot * 100).toFixed(1)}" style="width:100%"></label></div>
       </div>
@@ -1742,7 +1753,50 @@ function gradeAttempt(a) {
   let score = 0, maxScore = 0, scored = true;
   for (const qid of a.qids) { const q = D.questions.get(qid) || {}; const m = modOf(q); if (!m || m.pts == null) { scored = false; break; } maxScore += m.pts; if (a.answers[qid].res === "ok") score += m.pts; }
   if (a.mode === "paper") { const p = paperOf(a.pid); (p?.modules || []).forEach(m => { if (m.min && byMod[m.name]) byMod[m.name].sug = (byMod[m.name].sug || 0) + m.min * 60; }); }
-  a.summary = { ok, no, blank, unk, n: a.qids.length, acc: pct(ok, graded), time: a.elapsed, byMod, score: scored ? Math.round(score * 10) / 10 : null, maxScore: scored ? Math.round(maxScore * 10) / 10 : null };
+  if (a.manualTiming) for (const section of a.manualTiming.sections) {
+    const rows = section.modules.map(m => byMod[m]).filter(Boolean);
+    if (!rows.length) continue;
+    const merged = {n:0,ok:0,t:section.seconds,sug:0,recorded:true};
+    for (const row of rows) { merged.n += row.n; merged.ok += row.ok; merged.sug += row.sug || 0; }
+    section.modules.forEach(m => delete byMod[m]); byMod[section.name] = merged;
+  }
+  a.summary = { ok, no, blank, unk, n: a.qids.length, acc: pct(ok, graded), time: a.manualTiming ? a.manualTiming.sections.reduce((sum,s) => sum+Math.round(s.seconds*100),0)/100 : a.elapsed, byMod, score: scored ? Math.round(score * 10) / 10 : null, maxScore: scored ? Math.round(maxScore * 10) / 10 : null };
+}
+// Private correction files contain only explicit module/timing edits, never selections.
+async function applyDataCorrections(patch) {
+  if (!patch || patch.format !== "cuotiben-corrections-v1" || typeof patch.revision !== "string") throw new Error("云端修订格式无效");
+  const a = D.attempts.find(x => x.id === patch.attemptId && x.pid === patch.paperId);
+  const paper = paperOf(patch.paperId);
+  if (!a || !paper) return false;
+  if (!a.finishedAt || (P && document.querySelector(".prac"))) throw new Error("请先退出做题界面，不能在作答中修订计时");
+  if (WQ.running || WQ.list.length) throw new Error("本机仍在保存，请稍后再应用云端修订");
+  const key = "correction:" + patch.revision;
+  if (D.meta[key]) return false;
+  const modules = patch.modules, sections = patch.manualTiming?.sections;
+  if (!Array.isArray(modules) || !modules.length || !Array.isArray(sections) || !sections.length) throw new Error("云端修订缺少模块或用时");
+  for (let i=0;i<modules.length;i++) if (typeof modules[i].name !== "string" || !Number.isInteger(modules[i].from) || modules[i].from < 1 || (i && modules[i].from <= modules[i-1].from)) throw new Error("模块题号无效");
+  const names = new Set(modules.map(m=>m.name)), assigned = new Set();
+  for (const section of sections) {
+    if (typeof section.name !== "string" || !Number.isFinite(section.seconds) || section.seconds < 0 || !Array.isArray(section.modules) || !section.modules.length) throw new Error("手动用时无效");
+    for (const name of section.modules) { if (!names.has(name) || assigned.has(name)) throw new Error("计时模块重复或不存在"); assigned.add(name); }
+  }
+  if (assigned.size !== names.size) throw new Error("存在未分配用时的模块");
+  const updatedPaper = {...paper,modules:modules.map(m=>({...m,pts:null,min:null}))};
+  const updatedQuestions = [...D.questions.values()].filter(q=>q.pid === paper.id).map(q => {
+    let module = q.module; for (const m of modules) if(q.n>=m.from) module=m.name;
+    return {...q,module};
+  });
+  const updatedAttempt = {...a,manualTiming:JSON.parse(JSON.stringify(patch.manualTiming))};
+  const marker = {id:key,appliedAt:Date.now(),revision:patch.revision};
+  if (!S.idb || S.db) throw new Error("请在独立网页中应用修订");
+  await new Promise((resolve,reject)=>{
+    const tx = S.idb.transaction(["papers","questions","attempts","meta"],"readwrite");
+    tx.oncomplete=resolve; tx.onabort=()=>reject(tx.error || new Error("修订未保存")); tx.onerror=()=>{};
+    try { for (const [col,rows] of [["papers",[updatedPaper]],["questions",updatedQuestions],["attempts",[updatedAttempt]],["meta",[marker]]]) for (const row of rows) {const body={...row};delete body.id;tx.objectStore(col).put(body,row.id);} }
+    catch(e){tx.abort();reject(e);}
+  });
+  await loadData(); D.meta = Object.fromEntries((await dbAll("meta")).map(x=>[x.id,x]));
+  await regradeCompletedAttempts(); return true;
 }
 async function regradeCompletedAttempts() {
   const attempts = [], states = new Map();
@@ -1806,13 +1860,14 @@ async function doSubmit() {
    Report
    ===================================================================== */
 function moduleBars(byMod) {
-  const rows = Object.entries(byMod).sort((a, b) => modOrder(a[0]) - modOrder(b[0]));
+  const rows = Object.entries(byMod);
+  if (!rows.some(([,row]) => row.recorded)) rows.sort((a,b) => modOrder(a[0]) - modOrder(b[0]));
   const maxT = Math.max(1, ...rows.map(([, m]) => Math.max(m.t, m.sug || 0)));
   return `<div class="mod-head"><span>模块</span><span>正确率</span><span>用时</span></div><div class="mods">${rows.map(([name, m]) => {
     const acc = pct(m.ok, m.n);
     return `<div class="mod"><div class="nm">${esc(name)}<small>共 ${m.n} 道 · 答对 ${m.ok} 道</small></div>
       <div class="meter" data-tip="${esc(name)}：正确率 ${acc}%（${m.ok}/${m.n}）"><div class="track"><div class="fill" style="width:${acc}%;--c:${acc >= 70 ? "var(--good)" : acc >= 50 ? "var(--accent)" : "var(--bad)"}"></div></div><span class="v">${acc}%</span></div>
-      <div class="meter" data-tip="${esc(name)}：共 ${fmtDur(m.t)}，平均每题 ${fmtDur(m.t / m.n)}${m.sug ? `；建议 ${fmtDur(m.sug)}` : ""}"><div class="track"><div class="fill" style="width:${(m.t / maxT * 100).toFixed(1)}%;--c:${m.sug && m.t > m.sug * 1.1 ? "var(--mark)" : "var(--ink3)"}"></div>${m.sug ? `<i class="sug" style="left:${(m.sug / maxT * 100).toFixed(1)}%"></i>` : ""}</div><span class="v">${fmtT(m.t)}${m.sug ? `<br><span class="faint">建议 ${fmtT(m.sug)}</span>` : ""}</span></div></div>`;
+      <div class="meter" data-tip="${esc(name)}：共 ${fmtDur(m.t)}，平均每题 ${fmtDur(m.t / m.n)}${m.sug ? `；建议 ${fmtDur(m.sug)}` : ""}"><div class="track"><div class="fill" style="width:${(m.t / maxT * 100).toFixed(1)}%;--c:${m.sug && m.t > m.sug * 1.1 ? "var(--mark)" : "var(--ink3)"}"></div>${m.sug ? `<i class="sug" style="left:${(m.sug / maxT * 100).toFixed(1)}%"></i>` : ""}</div><span class="v">${m.recorded ? fmtStopwatch(m.t) : fmtT(m.t)}${m.sug ? `<br><span class="faint">建议 ${fmtT(m.sug)}</span>` : ""}</span></div></div>`;
   }).join("")}</div>`;
 }
 function vReport() {
@@ -1824,10 +1879,11 @@ function vReport() {
     <div class="ring"><svg viewBox="0 0 150 150" aria-hidden="true"><circle cx="75" cy="75" r="62" fill="none" stroke="var(--sunk)" stroke-width="12"/><circle cx="75" cy="75" r="62" fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${(C * s.acc / 100).toFixed(1)} ${C.toFixed(1)}"/></svg><div><div><b>${s.acc}<small style="font-size:16px">%</small></b><br><span>正确率</span></div></div></div>
     <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
       <div class="small muted">${esc(a.title)} · ${a.mode === "redo" ? "错题重做" : "整卷练习"} · 交卷 ${fmtDate(a.finishedAt)}</div>
-      <div class="kpi">${s.score != null ? `<div><b style="color:var(--accent)">${s.score}<small style="font-size:14px;color:var(--ink3)">/${s.maxScore}</small></b><span>按分值估分</span></div>` : ""}<div><b>${s.n}</b><span>一共</span></div><div><b style="color:var(--good)">${s.ok}</b><span>答对</span></div><div><b style="color:var(--bad)">${s.no}</b><span>答错</span></div><div><b>${s.blank}</b><span>未答</span></div><div><b>${fmtT(s.time)}</b><span>总用时</span></div></div>
+      <div class="kpi">${s.score != null ? `<div><b style="color:var(--accent)">${s.score}<small style="font-size:14px;color:var(--ink3)">/${s.maxScore}</small></b><span>按分值估分</span></div>` : ""}<div><b>${s.n}</b><span>一共</span></div><div><b style="color:var(--good)">${s.ok}</b><span>答对</span></div><div><b style="color:var(--bad)">${s.no}</b><span>答错</span></div><div><b>${s.blank}</b><span>未答</span></div><div><b>${a.manualTiming ? fmtStopwatch(s.time) : fmtT(s.time)}</b><span>总用时</span></div></div>
       ${s.unk ? `<div class="small warn">${s.unk} 道题没有标准答案，未计入正确率。可在解析页补填答案。</div>` : ""}
     </div>
   </section>
+  ${a.manualTiming ? `<p class="small muted">用时已按你的秒表记录校正；资料分析与不定项仅保留合计，不拆分单题用时。原始答题计时和选项均保留。</p>` : ""}
   <h2 class="section-title">各模块用时与正确率</h2>
   <section class="card pad">${moduleBars(s.byMod)}</section>
   <h2 class="section-title">答题卡</h2>
@@ -2197,7 +2253,7 @@ function vHistory() {
       ${UI.histEdit ? `<button class="btn sm danger" data-act="delAttempt" data-id="${a.id}">删除</button>` : ""}
       <button class="hmain" data-act="${a.finishedAt ? "report" : "resume"}" data-id="${a.id}">
         <b>${esc(a.title)}</b>
-        <span class="small faint">${fmtDate(a.startedAt)} · ${a.qids.length} 题${a.finishedAt ? ` · 用时 ${fmtT(s?.time)} · 答对 ${s?.ok}/${s?.n}` : ` · 已用时 ${fmtT(a.elapsed)}`}</span>
+        <span class="small faint">${fmtDate(a.startedAt)} · ${a.qids.length} 题${a.finishedAt ? ` · 用时 ${a.manualTiming ? fmtStopwatch(s?.time) : fmtT(s?.time)} · 答对 ${s?.ok}/${s?.n}` : ` · 已用时 ${fmtT(a.elapsed)}`}</span>
       </button>
       ${right}
     </article>`;
@@ -2221,7 +2277,7 @@ afterRender.history = () => {
 /* =====================================================================
    Overall report (across papers)
    ===================================================================== */
-const GROUPS = [["政治与常识", ["政治理论", "常识判断", "综合知识"]], ["言语理解与表达", ["言语理解与表达", "选词填空", "逻辑填空", "片段阅读", "语句表达", "阅读理解", "篇章阅读"]], ["数量关系", ["数量关系", "数字推理", "数学运算", "数字应用"]], ["判断推理", ["判断推理", "科学推理", "图形推理", "定义判断", "类比推理", "逻辑判断", "演绎推理", "分析推理"]], ["资料分析", ["资料分析", "综合分析"]]];
+const GROUPS = [["政治与常识", ["政治理论", "常识判断", "综合知识"]], ["言语理解与表达", ["言语理解与表达", "选词填空", "逻辑填空", "片段阅读", "语句表达", "阅读理解", "篇章阅读"]], ["数量关系", ["数量关系", "数字推理", "数学运算", "数字应用", "数理能力"]], ["判断推理", ["判断推理", "科学推理", "图形推理", "定义判断", "类比推理", "逻辑判断", "演绎推理", "分析推理"]], ["资料分析", ["资料分析", "综合分析", "不定项选择", "资料分析＋不定项"]]];
 const groupOf = m => (GROUPS.find(g => g[1].includes(m)) || ["其他"])[0];
 const SLOW_SEC = 15; // 平均每题少于 15 秒，多半是对答案录入，不计入速度
 const yearOf = t => +((t || "").match(/(?:19|20)\d{2}/) || [0])[0];
@@ -2239,6 +2295,15 @@ function overall() {
       const r = a.answers[qid]; const q = D.questions.get(qid); if (!q || !r || r.res === "unk") continue;
       const m = q.module || "未分类", g = groupOf(m);
       for (const [o, k] of [[grp, g], [mod, m]]) { const x = o[k] ||= { n: 0, ok: 0, t: 0, ans: 0 }; x.n++; x.t += r.t || 0; if (r.c) x.ans++; if (r.res === "ok") x.ok++; }
+    }
+    if (a.manualTiming) {
+      for (const key of Object.keys(mod)) delete mod[key];
+      for (const key of Object.keys(grp)) delete grp[key];
+      for (const [name,row] of Object.entries(a.summary.byMod)) {
+        mod[name] = {...row,ans:row.n};
+        const key=groupOf(name), target=grp[key] ||= {n:0,ok:0,t:0,ans:0};
+        target.n+=row.n; target.ok+=row.ok; target.t+=row.t; target.ans+=row.n;
+      }
     }
     return { a, id: a.id, label: shortTitle(a.title), acc: a.summary.acc, score: a.summary.score, max: a.summary.maxScore, answered, avgT, timeBad: avgT < SLOW_SEC, excl: excl.has(a.id), grp, mod };
   });
@@ -2720,6 +2785,13 @@ document.addEventListener("click", async e => {
 });
 document.addEventListener("change", async e => {
   const el = e.target; const act = el.dataset?.act; if (!act) return;
+  if (act === "matRange") {
+    const marker = IMP.st.markers[+el.dataset.i], values = [...(marker.range || [null,null])];
+    values[+el.dataset.end] = +el.value || null;
+    if (values.every(Boolean) && values[1] < values[0]) { el.value = marker.range?.[+el.dataset.end] || ""; toast("结束题号不能小于开始题号"); return; }
+    marker.range = values;
+    if (values.every(Boolean)) render();
+  }
   if (act === "modName") { IMP.st.modules[+el.dataset.i].name = el.value; render(); }
   if (act === "modFrom") { IMP.st.modules[+el.dataset.i].from = Math.max(1, +el.value || 1); IMP.st.modules.sort((a, b) => a.from - b.from); render(); }
   if (act === "pType" && P) {

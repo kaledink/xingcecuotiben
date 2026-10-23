@@ -17,9 +17,11 @@ const GitHubSync = (() => {
     const old = read(); return { repo, branch: old.repo === repo ? old.branch : undefined, seen: old.repo === repo ? old.seen : undefined };
   }
   async function api(c, path, options = {}) {
+    const {allowMissing, ...requestOptions} = options;
     const response = await fetch(`https://api.github.com/repos/${c.repo}${path}`, {
-      ...options, headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28', ...(options.body ? { 'Content-Type': 'application/json' } : {}) }
+      ...requestOptions, headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28', ...(options.body ? { 'Content-Type': 'application/json' } : {}) }
     });
+    if (response.status === 404 && allowMissing) return null;
     if (!response.ok) {
       const messages = {401:'令牌无效或已过期',403:'权限不足或 GitHub 请求额度受限',404:'仓库不存在、分支不存在，或令牌没有访问权限',409:'仓库为空或版本冲突，请先初始化仓库',422:'远端已更新或请求被拒绝，请先下载远端版本再重试'};
       throw Error(messages[response.status] || `GitHub 请求失败（${response.status}）`);
@@ -32,7 +34,17 @@ const GitHubSync = (() => {
     const repo = await api(c, '');
     if (!repo.private) throw Error('为保护记录和图片，只允许连接私有仓库');
     c.branch = repo.default_branch;
+    await applySavedCorrections(c);
     return api(c, `/git/ref/heads/${encodeURIComponent(c.branch)}`);
+  }
+  async function applySavedCorrections(c) {
+    const file = await api(c, `/contents/cuotiben-corrections.json?ref=${encodeURIComponent(c.branch)}`, {allowMissing:true});
+    if (!file) return false;
+    const patch = JSON.parse(new TextDecoder().decode(decode(file.content)));
+    return applyDataCorrections(patch);
+  }
+  async function corrections() {
+    const c=form(); await connect(c); render(); status('云端用时与模块修订已核对并应用，作答与图片保留');
   }
   async function remote(c, head) {
     const commit = await api(c, `/git/commits/${head}`);
@@ -94,7 +106,7 @@ const GitHubSync = (() => {
     for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
     if (length !== state.manifest.bytes || await hash(bytes) !== state.manifest.digest) throw Error('数据校验失败，未修改本机记录');
     const data = JSON.parse(new TextDecoder('utf-8', {fatal:true}).decode(bytes));
-    await restore(data);
+    await restore(data); await applySavedCorrections(c);
     save({...c,seen:state.sha,lastSaved:state.manifest.createdAt}); render(); status('已恢复全部记录和图片');
   }
   async function restore(data) {
@@ -120,7 +132,7 @@ const GitHubSync = (() => {
   async function exportAll() { await saveFile(`错题本完整备份-${Date.now()}.json`,JSON.stringify(await snapshot())); status('完整备份已导出，包含笔记、待办和所有图片'); }
   function card() {
     const c = read();
-    return `<h2 class="section-title">GitHub 私人同步</h2><div class="card pad"><p class="small muted">记录和图片仅上传到你指定的私有仓库。做题后请点“上传全部”；更换设备时先“下载恢复”。同步不包含 AI 密钥，也不会自动取回 Claude 历史记录。</p><label class="small">私有数据仓库<input id="githubRepo" placeholder="用户名/仓库名" value="${esc(c.repo || 'kaledink/dataofxingce')}"></label><label class="small">专用访问令牌<input id="githubToken" type="password" autocomplete="off" placeholder="仅用于本次打开的页面，不会持久保存"></label><p class="small muted">令牌仅需该私有仓库的 Contents 读写权限；仓库需先创建 README 完成初始化。请勿填写你的 GitHub 登录密码。</p><div class="row"><button class="btn" data-github="export">导出完整备份</button><button class="btn" data-github="download">下载恢复</button><button class="btn primary" data-github="upload">上传全部</button><button class="btn" data-github="forget">断开连接</button></div><p class="small" id="githubStatus" role="status">${c.lastSaved ? '上次同步：'+esc(new Date(c.lastSaved).toLocaleString()) : '尚未同步；当前改动先保存在本机'}</p></div>`;
+    return `<h2 class="section-title">GitHub 私人同步</h2><div class="card pad"><p class="small muted">记录和图片仅上传到你指定的私有仓库。做题后请点“上传全部”；更换设备时先“下载恢复”。同步不包含 AI 密钥，也不会自动取回 Claude 历史记录。</p><label class="small">私有数据仓库<input id="githubRepo" placeholder="用户名/仓库名" value="${esc(c.repo || 'kaledink/dataofxingce')}"></label><label class="small">专用访问令牌<input id="githubToken" type="password" autocomplete="off" placeholder="仅用于本次打开的页面，不会持久保存"></label><p class="small muted">令牌仅需该私有仓库的 Contents 读写权限；仓库需先创建 README 完成初始化。请勿填写你的 GitHub 登录密码。</p><div class="row"><button class="btn" data-github="export">导出完整备份</button><button class="btn" data-github="corrections">应用云端修订</button><button class="btn" data-github="download">下载恢复</button><button class="btn primary" data-github="upload">上传全部</button><button class="btn" data-github="forget">断开连接</button></div><p class="small" id="githubStatus" role="status">${c.lastSaved ? '上次同步：'+esc(new Date(c.lastSaved).toLocaleString()) : '尚未同步；当前改动先保存在本机'}</p></div>`;
   }
   document.addEventListener('click', async event => {
     const button = event.target.closest('[data-github]'); if (!button || busy) return;
@@ -128,6 +140,7 @@ const GitHubSync = (() => {
     try {
       if (button.dataset.github === 'forget') { token = ''; localStorage.removeItem(KEY); render(); status('连接已断开，本机记录保留'); }
       else if (button.dataset.github === 'export') await exportAll();
+      else if (button.dataset.github === 'corrections') await corrections();
       else if (button.dataset.github === 'upload') await upload();
       else await download();
     } catch(e) { status('操作未完成：' + e.message); }
