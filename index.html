@@ -1964,7 +1964,7 @@ function vReview() {
   <div class="rv" style="margin-top:14px">
     <section class="card pad" style="min-width:0">
       <div class="qmeta"><span class="chip acc">${esc(q.module || "未分类")}</span><span class="small faint">${esc(qLabel(q))}</span>${s.wrongCount ? `<span class="chip bad">错 ${s.wrongCount} 次</span>` : ""}${s.inBook ? `<span class="chip">在错题本</span>` : ""}</div>
-      ${q.mat ? `<details ${q.module === "资料分析" || q.module === "言语理解与表达" ? "open" : ""}><summary>材料</summary><img class="qimg" style="margin:8px 0" data-ref="${esc(q.mat)}" alt="材料"></details>` : ""}
+      ${q.mat ? `<details open data-shared-material><summary>共用材料（点击可收起）</summary><img class="qimg" style="margin:8px 0" data-ref="${esc(q.mat)}" alt="材料"></details>` : ""}
       ${q.img ? `<img class="qimg" data-ref="${esc(q.img)}" alt="第${q.n}题">` : ""}
       <div class="row small" style="margin:8px 0"><span class="faint grow">${q.img?.startsWith("i:repair-") ? "题图来自完整 PDF 修补包" : "若题干或选项缺失，可检查云端完整题图"}</span><button class="btn sm" data-act="repairQuestionImage">修复题图</button></div>
       <div class="ansline">

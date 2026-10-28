@@ -27,6 +27,18 @@ for(const key of ['attempts','qstate','memos'])assert.deepEqual(result[key],befo
 assert.equal(await p.evaluate(patch=>applyImageRepairs(patch),patch),false);
 await p.reload();await p.locator('#githubRepo').waitFor();assert.equal(await p.evaluate(()=>D.questions.get('q12').img),ref);
 await p.evaluate(()=>openReview([{qid:'q6'}]));await p.locator('img[alt="第6题"]').waitFor();assert.deepEqual(errors,[]);
+// Reasoning materials must be expanded in review, including both shared questions.
+await p.evaluate(async()=>{
+for(const n of [89,90]){const source=D.questions.get('q6');await dbPut('questions','q'+n,{...source,id:'q'+n,n,module:'判断推理'});}await loadData();openReview([{qid:'q89'},{qid:'q90'}]);
+});
+for(const n of [89,90]){
+await p.locator(`img[alt="第${n}题"]`).waitFor();
+assert.equal(await p.locator('details[data-shared-material]').evaluate(el=>el.open),true);
+await p.waitForFunction(()=>{const im=document.querySelector('details[data-shared-material] img');return im?.complete&&im.naturalWidth>0;});
+assert.equal(await p.locator('details[data-shared-material] img').isVisible(),true);
+if(n===89)await p.locator('[data-act=rvNext]').click();
+}
+await p.evaluate(()=>openReview([{qid:'q6'}]));
 // A stale applied marker must not suppress repair of an overwritten image.
 await p.evaluate(async()=>{const q=D.questions.get('q6');q.img='i:old';await dbPut('questions',q.id,q);render();});
 await p.locator('[data-act=repairQuestionImage]').click();await p.locator('#githubRepo').fill('test/private');await p.locator('#githubToken').fill('test-key');await p.locator('[data-github=corrections]').click();await p.locator('#githubStatus').filter({hasText:'第6题完整题图已应用'}).waitFor();assert.equal(await p.evaluate(()=>D.questions.get('q6').img),ref);
